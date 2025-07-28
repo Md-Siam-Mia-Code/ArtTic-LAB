@@ -1,3 +1,5 @@
 /models
 /outputs
 /.gradio
+/__pycache__
+*.pyc
