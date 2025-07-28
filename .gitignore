@@ -1,7 +1,7 @@
-/models
 /outputs
 /.gradio
 /__pycache__
 *.pyc
 *.txt
 *.log
+*.safetensors
