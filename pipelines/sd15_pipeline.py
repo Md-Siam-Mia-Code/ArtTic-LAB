@@ -8,7 +8,8 @@ class SD15Pipeline(ArtTicPipeline):
         self.pipe = StableDiffusionPipeline.from_single_file(
             self.model_path,
             torch_dtype=self.dtype,
-            use_safetensors=True
+            use_safetensors=True,
+            safety_checker=None # EXPLICITLY disable the safety checker and its warning
         )
         progress(0.6, desc="Moving model to XPU (ARC GPU)...")
         self.pipe.to("xpu")
