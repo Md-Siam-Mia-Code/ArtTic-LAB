@@ -2,8 +2,6 @@
   <img src="assets/Banner.png" alt="ArtTic-LAB Banner"/>
 </p>
 
-# 🎨 ArtTic-LAB
-
 ### Your Personal AI Art Studio, Forged for Intel ARC GPUs 🚀
 
 Tired of the messy, complex, and NVIDIA-centric world of AI image generation? So were we. ArtTic-LAB was born out of a simple desire: to have a **modern, clean, and powerful** tool that just _works_ on Intel ARC hardware, without the headaches.
