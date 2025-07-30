@@ -2,8 +2,6 @@
   <img src="assets/Banner.png" alt="ArtTic-LAB Banner"/>
 </p>
 
-# 🎨 ArtTic-LAB
-
 ### Your Personal AI Art Studio, Forged for Intel ARC GPUs 🚀
 
 Tired of the messy, complex, and NVIDIA-centric world of AI image generation? So were we. ArtTic-LAB was born out of a simple desire: to have a **modern, clean, and powerful** tool that just _works_ on Intel ARC hardware, without the headaches.
@@ -57,7 +55,7 @@ Download and unzip this project to a folder on your computer.
 
 ### 3. Run the Installer Script 🛠️
 
-This only needs to be done **once**. It will create a self-contained `arttic-lab` environment and install all the magic dependencies.
+This only needs to be done **once**. It will create a self-contained `ArtTic-LAB` environment and install all the magic dependencies.
 
 - **On Windows:**
   Double-click `install.bat` or run it from your terminal.
