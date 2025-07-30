@@ -8,7 +8,7 @@ ASPECT_RATIOS_SDXL_SD3 = {"1:1": (1024, 1024), "4:3": (1152, 896), "3:2": (1216,
 def create_ui(available_models, schedulers_list, handlers):
     with gr.Blocks(theme=gr.themes.Soft(), css="footer {display: none !important}") as app:
         gr.Markdown("# 🎨 ArtTic-LAB")
-        gr.Markdown("v1.2: The Next-Gen SD3 Update")
+        gr.Markdown("v1.3: The Stability & Memory Update")
 
         with gr.Tabs():
             with gr.TabItem("Generate"):
@@ -17,9 +17,10 @@ def create_ui(available_models, schedulers_list, handlers):
                         status_text = gr.Textbox(label="Status", value="No model loaded.", interactive=False)
                         model_dropdown = gr.Dropdown(label="Model", choices=available_models, value=None)
                         with gr.Row():
-                            load_model_btn = gr.Button("Load Model", variant="primary")
-                            refresh_models_btn = gr.Button("🔄 Refresh Models")
-                        
+                            load_model_btn = gr.Button("Load Model", variant="primary", scale=3)
+                            refresh_models_btn = gr.Button("🔄", scale=1)
+                            unload_model_btn = gr.Button("Unload Model", scale=2)
+
                         prompt = gr.Textbox(label="Prompt", value="photo of a beautiful woman, 8k, ultra realistic, cinematic", lines=3)
                         negative_prompt = gr.Textbox(label="Negative Prompt", placeholder="e.g., ugly, deformed, blurry (optional for SD3)", lines=2)
                         
@@ -37,9 +38,11 @@ def create_ui(available_models, schedulers_list, handlers):
                                 aspect_4_3 = gr.Button("4:3")
                                 aspect_3_2 = gr.Button("3:2")
                                 aspect_16_9 = gr.Button("16:9")
-                        
+                            
+                            vae_tiling_checkbox = gr.Checkbox(label="Enable VAE Tiling (for high resolutions)", value=True)
+
                         with gr.Row():
-                            steps = gr.Slider(label="Steps", minimum=1, maximum=100, value=28, step=1) # SD3 default
+                            steps = gr.Slider(label="Steps", minimum=1, maximum=100, value=28, step=1)
                             guidance = gr.Slider(label="Guidance Scale", minimum=1, maximum=20, value=7.0, step=0.1)
                         with gr.Row():
                             seed = gr.Number(label="Seed", value=12345, precision=0)
@@ -73,8 +76,10 @@ def create_ui(available_models, schedulers_list, handlers):
         refresh_models_btn.click(fn=handlers["refresh_models"], outputs=model_dropdown)
         swap_dims_btn.click(fn=handlers["swap_dims"], inputs=[width_slider, height_slider], outputs=[width_slider, height_slider])
         randomize_seed_btn.click(fn=handlers["randomize_seed"], outputs=seed)
+        unload_model_btn.click(fn=handlers["unload_model"], outputs=status_text)
+        vae_tiling_checkbox.change(fn=handlers["toggle_vae_tiling"], inputs=vae_tiling_checkbox)
         
-        load_model_btn.click(fn=handlers["load_model"], inputs=[model_dropdown, scheduler_dropdown], outputs=[status_text, width_slider, height_slider], show_progress="full")
+        load_model_btn.click(fn=handlers["load_model"], inputs=[model_dropdown, scheduler_dropdown, vae_tiling_checkbox], outputs=[status_text, width_slider, height_slider], show_progress="full")
         generate_btn.click(fn=handlers["generate_image"], inputs=[prompt, negative_prompt, steps, guidance, seed, width_slider, height_slider], outputs=[output_image, info_text]).then(fn=handlers["get_gallery"], outputs=gallery)
         refresh_gallery_btn.click(fn=handlers["get_gallery"], outputs=gallery)
 
