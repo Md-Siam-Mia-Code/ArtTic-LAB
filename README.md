@@ -30,10 +30,10 @@ This is not just another wrapper. It's a ground-up application built for perform
 
 Here are a few examples generated entirely with ArtTic-LAB!
 
-|                                                                       |                                                                        |                                                                         |
-| :-------------------------------------------------------------------: | :--------------------------------------------------------------------: | :---------------------------------------------------------------------: |
-|  ![Demo 1](assets/demos/20250729-012418_LustifySDXL_NSFW_12345.png)   |  ![Demo 2](assets/demos/20250729-012459_LustifySDXL_NSFW_123456.png)   |  ![Demo 3](assets/demos/20250729-012539_LustifySDXL_NSFW_1234567.png)   |
-| ![Demo 4](assets/demos/20250729-012625_LustifySDXL_NSFW_12345678.png) | ![Demo 5](assets/demos/20250729-012704_LustifySDXL_NSFW_123456789.png) | ![Demo 6](assets/demos/20250729-012742_LustifySDXL_NSFW_1234567890.png) |
+|                               |                               |                               |
+| :---------------------------: | :---------------------------: | :---------------------------: |
+| ![Demo 1](assets/demos/1.png) | ![Demo 2](assets/demos/2.png) | ![Demo 3](assets/demos/3.png) |
+| ![Demo 4](assets/demos/4.png) | ![Demo 5](assets/demos/5.png) | ![Demo 6](assets/demos/6.png) |
 
 ---
 
@@ -137,4 +137,4 @@ This project is open-source and available under the [MIT License](LICENSE).
 
 ---
 
-###  Made with ❤️ and an Intel ARC A770. Happy creating!
+### Made with ❤️ and an Intel ARC A770. Happy creating!
