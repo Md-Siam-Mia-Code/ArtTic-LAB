@@ -10,7 +10,5 @@ class SDXLPipeline(ArtTicPipeline):
             torch_dtype=self.dtype,
             use_safetensors=True,
             variant="fp16",
-            safety_checker=None # EXPLICITLY disable the safety checker and its warning
+            safety_checker=None
         )
-        progress(0.6, desc="Moving model to XPU (ARC GPU)...")
-        self.pipe.to("xpu")

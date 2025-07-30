@@ -11,5 +11,3 @@ class SD2Pipeline(ArtTicPipeline):
             use_safetensors=True,
             safety_checker=None
         )
-        progress(0.6, desc="Moving model to XPU (ARC GPU)...")
-        self.pipe.to("xpu")
