@@ -2,31 +2,36 @@
 import os
 from safetensors import safe_open
 from .sd15_pipeline import SD15Pipeline
+from .sd2_pipeline import SD2Pipeline
 from .sdxl_pipeline import SDXLPipeline
-import logging # Import logging
+import logging
 
-# Get our application's logger
 logger = logging.getLogger("arttic_lab")
 
 MODELS_DIR = "./models"
 
-def _is_xl(model_name):
-    model_path = os.path.join(MODELS_DIR, f"{model_name}.safetensors")
-    try:
-        with safe_open(model_path, framework="pt", device="cpu") as f:
-            for key in f.keys():
-                if key.startswith("conditioner.embedders.1"):
-                    return True
-    except Exception as e:
-        logger.error(f"Could not inspect model '{model_name}': {e}. Assuming SD 1.5.")
-        return False
-    return False
+def _is_xl(keys):
+    return any(k.startswith("conditioner.embedders.1") for k in keys)
+
+def _is_v2(keys):
+    # This key is present in v2.x checkpoints but not in v1.x
+    return "model.diffusion_model.input_blocks.8.1.transformer_blocks.0.attn2.to_k.weight" in keys
 
 def get_pipeline_for_model(model_name):
     model_path = os.path.join(MODELS_DIR, f"{model_name}.safetensors")
-    if _is_xl(model_name):
-        logger.info(f"Model '{model_name}' correctly detected as SDXL.")
+    try:
+        with safe_open(model_path, framework="pt", device="cpu") as f:
+            keys = list(f.keys())
+    except Exception as e:
+        logger.error(f"Could not inspect model '{model_name}': {e}. Assuming SD 1.5 as fallback.")
+        return SD15Pipeline(model_path)
+
+    if _is_xl(keys):
+        logger.info(f"Model '{model_name}' detected as SDXL.")
         return SDXLPipeline(model_path)
+    elif _is_v2(keys):
+        logger.info(f"Model '{model_name}' detected as SD 2.x.")
+        return SD2Pipeline(model_path)
     else:
-        logger.info(f"Model '{model_name}' correctly detected as SD 1.5.")
+        logger.info(f"Model '{model_name}' detected as SD 1.5.")
         return SD15Pipeline(model_path)
