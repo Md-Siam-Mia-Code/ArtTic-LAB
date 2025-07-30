@@ -1,7 +1,7 @@
 # pipelines/base_pipeline.py
 import torch
 import intel_extension_for_pytorch as ipex
-import logging # Import logging
+import logging
 
 # Get our application's logger
 logger = logging.getLogger("arttic_lab")
