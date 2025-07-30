@@ -48,7 +48,36 @@ def swap_dimensions_handler(width, height):
     logger.info(f"Swapping dimensions from {width}x{height} to {height}x{width}.")
     return height, width
 
-def load_model_handler(model_name, scheduler_name, progress=gr.Progress()):
+def unload_model_handler():
+    global current_pipe, current_model_name
+    if current_pipe is None:
+        logger.info("No model is currently loaded.")
+        return "No model loaded."
+    
+    logger.info(f"Unloading model '{current_model_name}' from VRAM...")
+    del current_pipe.pipe
+    del current_pipe
+    current_pipe = None
+    current_model_name = ""
+    torch.xpu.empty_cache()
+    logger.info("Model unloaded and VRAM cache cleared.")
+    return "No model loaded."
+
+def toggle_vae_tiling_handler(enabled):
+    if current_pipe is None:
+        logger.warning("Tried to toggle VAE tiling, but no model is loaded.")
+        return
+    
+    if enabled:
+        logger.info("Enabling VAE Slicing & Tiling for memory efficiency.")
+        current_pipe.pipe.enable_vae_slicing()
+        current_pipe.pipe.enable_vae_tiling()
+    else:
+        logger.info("Disabling VAE Slicing & Tiling.")
+        current_pipe.pipe.disable_vae_slicing()
+        current_pipe.pipe.disable_vae_tiling()
+
+def load_model_handler(model_name, scheduler_name, vae_tiling_enabled, progress=gr.Progress()):
     from pipelines import get_pipeline_for_model
     from pipelines.sdxl_pipeline import SDXLPipeline
     from pipelines.sd2_pipeline import SD2Pipeline
@@ -58,18 +87,24 @@ def load_model_handler(model_name, scheduler_name, progress=gr.Progress()):
     if not model_name: raise gr.Error("Please select a model from the dropdown.")
     
     try:
+        # Unload any existing model first
+        if current_pipe:
+            unload_model_handler()
+
         logger.info(f"Loading model: {model_name}...")
         progress(0, desc=f"Getting pipeline for {model_name}...")
         current_pipe = get_pipeline_for_model(model_name)
         current_pipe.load_pipeline(progress)
         
-        # Note: SD3 has its own specific scheduler, we let diffusers handle it.
         if not isinstance(current_pipe, SD3Pipeline):
             logger.info(f"Setting scheduler to: {scheduler_name}")
             SchedulerClass = SCHEDULER_MAP[scheduler_name]
             current_pipe.pipe.scheduler = SchedulerClass.from_config(current_pipe.pipe.scheduler.config)
 
         current_pipe.optimize_with_ipex(progress)
+        
+        # Apply VAE tiling if the user has it checked
+        toggle_vae_tiling_handler(vae_tiling_enabled)
         
         current_model_name = model_name
         
@@ -100,7 +135,6 @@ def generate_image_handler(prompt, negative_prompt, steps, guidance, seed, width
         progress(step / int(steps), desc=f"Sampling... {step + 1}/{int(steps)}")
         return callback_kwargs
 
-    # For SD3, it's recommended to omit the negative prompt if it's empty
     gen_kwargs = {
         "prompt": prompt,
         "num_inference_steps": int(steps),
@@ -135,6 +169,7 @@ if __name__ == "__main__":
         "load_model": load_model_handler, "generate_image": generate_image_handler,
         "get_gallery": get_output_images, "refresh_models": refresh_models_handler,
         "randomize_seed": randomize_seed_handler, "swap_dims": swap_dimensions_handler,
+        "unload_model": unload_model_handler, "toggle_vae_tiling": toggle_vae_tiling_handler,
     }
     app = create_ui(get_available_models(), list(SCHEDULER_MAP.keys()), handlers)
     logger.info("UI is ready. Launching Gradio server...")
