@@ -8,7 +8,7 @@ ECHO             ArtTic-LAB Installer
 ECHO =======================================================
 ECHO.
 ECHO This script will create a dedicated Conda environment
-ECHO named 'arttic-lab' and install all dependencies.
+ECHO named 'ArtTic-LAB' and install all dependencies.
 ECHO.
 
 REM --- Check for Conda installation ---
