@@ -77,7 +77,7 @@ def toggle_vae_tiling_handler(enabled):
         current_pipe.pipe.disable_vae_slicing()
         current_pipe.pipe.disable_vae_tiling()
 
-def load_model_handler(model_name, scheduler_name, vae_tiling_enabled, progress=gr.Progress()):
+def load_model_handler(model_name, scheduler_name, vae_tiling_enabled, cpu_offload_enabled, progress=gr.Progress()):
     from pipelines import get_pipeline_for_model
     from pipelines.sdxl_pipeline import SDXLPipeline
     from pipelines.sd2_pipeline import SD2Pipeline
@@ -87,23 +87,24 @@ def load_model_handler(model_name, scheduler_name, vae_tiling_enabled, progress=
     if not model_name: raise gr.Error("Please select a model from the dropdown.")
     
     try:
-        # Unload any existing model first
-        if current_pipe:
-            unload_model_handler()
+        if current_pipe: unload_model_handler()
 
         logger.info(f"Loading model: {model_name}...")
         progress(0, desc=f"Getting pipeline for {model_name}...")
         current_pipe = get_pipeline_for_model(model_name)
         current_pipe.load_pipeline(progress)
         
+        # Place model on device (GPU or CPU Offload)
+        current_pipe.place_on_device(use_cpu_offload=cpu_offload_enabled)
+        
+        # IPEX optimization is skipped in offload mode
+        current_pipe.optimize_with_ipex(progress)
+
         if not isinstance(current_pipe, SD3Pipeline):
             logger.info(f"Setting scheduler to: {scheduler_name}")
             SchedulerClass = SCHEDULER_MAP[scheduler_name]
             current_pipe.pipe.scheduler = SchedulerClass.from_config(current_pipe.pipe.scheduler.config)
-
-        current_pipe.optimize_with_ipex(progress)
         
-        # Apply VAE tiling if the user has it checked
         toggle_vae_tiling_handler(vae_tiling_enabled)
         
         current_model_name = model_name
@@ -114,12 +115,13 @@ def load_model_handler(model_name, scheduler_name, vae_tiling_enabled, progress=
             default_res, model_type_str = 1024, "SDXL"
         elif isinstance(current_pipe, SD2Pipeline):
             default_res, model_type_str = 768, "SD 2.x"
-        else: # Assumes SD15Pipeline
+        else:
             default_res, model_type_str = 512, "SD 1.5"
 
-        logger.info(f"Model loaded. Type: {model_type_str}. Default resolution set to {default_res}x{default_res}.")
+        status_suffix = "(CPU Offload)" if cpu_offload_enabled else ""
+        logger.info(f"Model loaded. Type: {model_type_str} {status_suffix}. Default res: {default_res}x{default_res}.")
         progress(1, desc=f"Model '{model_name}' is ready!")
-        status_message = f"Model Ready: {model_name} ({model_type_str})"
+        status_message = f"Model Ready: {model_name} ({model_type_str}) {status_suffix}"
         return status_message, gr.Slider(value=default_res), gr.Slider(value=default_res)
     except Exception as e:
         logger.error(f"Failed to load model '{model_name}'. Full error: {e}", exc_info=True)

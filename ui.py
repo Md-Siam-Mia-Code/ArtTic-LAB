@@ -7,8 +7,8 @@ ASPECT_RATIOS_SDXL_SD3 = {"1:1": (1024, 1024), "4:3": (1152, 896), "3:2": (1216,
 
 def create_ui(available_models, schedulers_list, handlers):
     with gr.Blocks(theme=gr.themes.Soft(), css="footer {display: none !important}") as app:
-        gr.Markdown("# 🎨 ArtTic-LAB")
-        gr.Markdown("v1.3: The Stability & Memory Update")
+        gr.Markdown("# ArtTic-LAB")
+        gr.Markdown("ArtTic-LAB v1.5.0: The Power & Efficiency Update!")
 
         with gr.Tabs():
             with gr.TabItem("Generate"):
@@ -40,6 +40,7 @@ def create_ui(available_models, schedulers_list, handlers):
                                 aspect_16_9 = gr.Button("16:9")
                             
                             vae_tiling_checkbox = gr.Checkbox(label="Enable VAE Tiling (for high resolutions)", value=True)
+                            cpu_offload_checkbox = gr.Checkbox(label="Enable CPU Offloading (for low VRAM)", value=False)
 
                         with gr.Row():
                             steps = gr.Slider(label="Steps", minimum=1, maximum=100, value=28, step=1)
@@ -79,7 +80,9 @@ def create_ui(available_models, schedulers_list, handlers):
         unload_model_btn.click(fn=handlers["unload_model"], outputs=status_text)
         vae_tiling_checkbox.change(fn=handlers["toggle_vae_tiling"], inputs=vae_tiling_checkbox)
         
-        load_model_btn.click(fn=handlers["load_model"], inputs=[model_dropdown, scheduler_dropdown, vae_tiling_checkbox], outputs=[status_text, width_slider, height_slider], show_progress="full")
+        load_model_inputs = [model_dropdown, scheduler_dropdown, vae_tiling_checkbox, cpu_offload_checkbox]
+        load_model_btn.click(fn=handlers["load_model"], inputs=load_model_inputs, outputs=[status_text, width_slider, height_slider], show_progress="full")
+        
         generate_btn.click(fn=handlers["generate_image"], inputs=[prompt, negative_prompt, steps, guidance, seed, width_slider, height_slider], outputs=[output_image, info_text]).then(fn=handlers["get_gallery"], outputs=gallery)
         refresh_gallery_btn.click(fn=handlers["get_gallery"], outputs=gallery)
 
