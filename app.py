@@ -1,5 +1,4 @@
 # app.py
-# --- STAGE 1 & 2 ---
 import argparse, logging, sys, os, contextlib, signal, random
 from helpers.cli_manager import setup_logging, log_system_info, APP_LOGGER_NAME
 @contextlib.contextmanager
@@ -14,7 +13,6 @@ logger = logging.getLogger(APP_LOGGER_NAME)
 with suppress_stderr(args.disable_filters):
     import torch, intel_extension_for_pytorch as ipex
 
-# --- STAGE 3: APPLICATION IMPORTS & LOGIC ---
 import diffusers, gradio as gr, time
 from glob import glob
 from ui import create_ui
@@ -52,6 +50,9 @@ def swap_dimensions_handler(width, height):
 
 def load_model_handler(model_name, scheduler_name, progress=gr.Progress()):
     from pipelines import get_pipeline_for_model
+    from pipelines.sdxl_pipeline import SDXLPipeline
+    from pipelines.sd2_pipeline import SD2Pipeline
+
     global current_pipe, current_model_name
     if not model_name: raise gr.Error("Please select a model from the dropdown.")
     
@@ -65,20 +66,23 @@ def load_model_handler(model_name, scheduler_name, progress=gr.Progress()):
         SchedulerClass = SCHEDULER_MAP[scheduler_name]
         current_pipe.pipe.scheduler = SchedulerClass.from_config(current_pipe.pipe.scheduler.config)
 
-        # Apply IPEX optimization. Diffusers will handle SDPA automatically.
         current_pipe.optimize_with_ipex(progress)
         
-        # REMOVED: The erroneous call to enable_xformers_memory_efficient_attention() is gone.
-        
         current_model_name = model_name
-        is_xl = "SDXL" in current_pipe.__class__.__name__
-        default_res = 1024 if is_xl else 512
-        logger.info(f"Model loaded. Default resolution set to {default_res}x{default_res}.")
+        
+        if isinstance(current_pipe, SDXLPipeline):
+            default_res, model_type_str = 1024, "SDXL"
+        elif isinstance(current_pipe, SD2Pipeline):
+            default_res, model_type_str = 768, "SD 2.x"
+        else: # Assumes SD15Pipeline
+            default_res, model_type_str = 512, "SD 1.5"
+
+        logger.info(f"Model loaded. Type: {model_type_str}. Default resolution set to {default_res}x{default_res}.")
         progress(1, desc=f"Model '{model_name}' is ready!")
-        status_message = f"Model Ready: {model_name}"
+        status_message = f"Model Ready: {model_name} ({model_type_str})"
         return status_message, gr.Slider(value=default_res), gr.Slider(value=default_res)
     except Exception as e:
-        logger.error(f"Failed to load model '{model_name}'. Full error: {e}")
+        logger.error(f"Failed to load model '{model_name}'. Full error: {e}", exc_info=True)
         raise gr.Error(f"Failed to load model '{model_name}'. It may be corrupted or an unsupported type.")
 
 def generate_image_handler(prompt, negative_prompt, steps, guidance, seed, width, height, progress=gr.Progress()):
@@ -91,7 +95,6 @@ def generate_image_handler(prompt, negative_prompt, steps, guidance, seed, width
         progress(step / int(steps), desc=f"Sampling... {step + 1}/{int(steps)}")
         return callback_kwargs
 
-    # The generation call is now clean. SDPA is used implicitly by default.
     image = current_pipe.generate(prompt=prompt, negative_prompt=negative_prompt, num_inference_steps=int(steps),
         guidance_scale=guidance, width=int(width), height=int(height), generator=generator,
         callback_on_step_end=universal_progress_callback).images[0]
@@ -107,7 +110,6 @@ def generate_image_handler(prompt, negative_prompt, steps, guidance, seed, width
 def signal_handler(sig, frame):
     print("\n"); logger.info("Ctrl+C detected. Shutting down ArtTic-LAB gracefully..."); sys.exit(0)
 
-# --- STAGE 4: MAIN EXECUTION ---
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     if not args.disable_filters: os.system('cls' if os.name == 'nt' else 'clear')
