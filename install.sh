@@ -6,7 +6,7 @@ echo "            ArtTic-LAB Installer"
 echo "======================================================="
 echo ""
 echo "This script will create a dedicated Conda environment"
-echo "named 'arttic-lab' and install all dependencies."
+echo "named 'ArtTic-LAB' and install all dependencies."
 echo ""
 
 # --- Check for Conda installation ---
