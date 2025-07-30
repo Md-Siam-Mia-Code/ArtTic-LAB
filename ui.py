@@ -1,9 +1,8 @@
 # ui.py
 import gradio as gr
 
-# Define standard resolutions for aspect ratios
-# Tuple is (Width, Height)
 ASPECT_RATIOS_SD15 = {"1:1": (512, 512), "4:3": (576, 448), "3:2": (608, 416), "16:9": (672, 384)}
+ASPECT_RATIOS_SD2 = {"1:1": (768, 768), "4:3": (864, 640), "3:2": (960, 640), "16:9": (1024, 576)}
 ASPECT_RATIOS_SDXL = {"1:1": (1024, 1024), "4:3": (1152, 896), "3:2": (1216, 832), "16:9": (1344, 768)}
 
 def create_ui(available_models, schedulers_list, handlers):
@@ -29,11 +28,10 @@ def create_ui(available_models, schedulers_list, handlers):
                             
                             with gr.Row(equal_height=True):
                                 width_slider = gr.Slider(label="Width", minimum=256, maximum=2048, value=512, step=64)
-                                swap_dims_btn = gr.Button("↔️", min_width=50, elem_id="swap-button") # SWAP BUTTON
+                                swap_dims_btn = gr.Button("↔️", min_width=50, elem_id="swap-button")
                                 height_slider = gr.Slider(label="Height", minimum=256, maximum=2048, value=512, step=64)
                             
-                            # --- NEW: Aspect Ratio Buttons ---
-                            gr.Markdown("Set Resolution (SD1.5 / SDXL)")
+                            gr.Markdown("Set Resolution (SD1.5 / SD2 / SDXL)")
                             with gr.Row():
                                 aspect_1_1 = gr.Button("1:1")
                                 aspect_4_3 = gr.Button("4:3")
@@ -45,7 +43,7 @@ def create_ui(available_models, schedulers_list, handlers):
                             guidance = gr.Slider(label="Guidance Scale", minimum=1, maximum=20, value=7.5, step=0.1)
                         with gr.Row():
                             seed = gr.Number(label="Seed", value=12345, precision=0)
-                            randomize_seed_btn = gr.Button("🎲", min_width=50) # RANDOMIZE BUTTON
+                            randomize_seed_btn = gr.Button("🎲", min_width=50)
                         generate_btn = gr.Button("Generate", variant="primary")
                         
                     with gr.Column(scale=3):
@@ -56,15 +54,17 @@ def create_ui(available_models, schedulers_list, handlers):
                 gallery = gr.Gallery(label="Your Generations", show_label=False, columns=5)
                 refresh_gallery_btn = gr.Button("Refresh Gallery")
 
-        # --- Event Handlers ---
-        # Helper function to determine which aspect ratio dict to use
         def set_aspect_ratio(ratio_key, status_str):
-            is_xl = "SDXL" in status_str
-            ratios = ASPECT_RATIOS_SDXL if is_xl else ASPECT_RATIOS_SD15
-            width, height = ratios.get(ratio_key, (512, 512))
+            if "SDXL" in status_str:
+                ratios, default_res = ASPECT_RATIOS_SDXL, (1024, 1024)
+            elif "SD 2.x" in status_str:
+                ratios, default_res = ASPECT_RATIOS_SD2, (768, 768)
+            else:
+                ratios, default_res = ASPECT_RATIOS_SD15, (512, 512)
+            
+            width, height = ratios.get(ratio_key, default_res)
             return width, height
 
-        # Wire up aspect ratio buttons
         aspect_1_1.click(fn=lambda s: set_aspect_ratio("1:1", s), inputs=[status_text], outputs=[width_slider, height_slider])
         aspect_4_3.click(fn=lambda s: set_aspect_ratio("4:3", s), inputs=[status_text], outputs=[width_slider, height_slider])
         aspect_3_2.click(fn=lambda s: set_aspect_ratio("3:2", s), inputs=[status_text], outputs=[width_slider, height_slider])
