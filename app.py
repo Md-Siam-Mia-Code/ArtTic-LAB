@@ -52,6 +52,7 @@ def load_model_handler(model_name, scheduler_name, progress=gr.Progress()):
     from pipelines import get_pipeline_for_model
     from pipelines.sdxl_pipeline import SDXLPipeline
     from pipelines.sd2_pipeline import SD2Pipeline
+    from pipelines.sd3_pipeline import SD3Pipeline
 
     global current_pipe, current_model_name
     if not model_name: raise gr.Error("Please select a model from the dropdown.")
@@ -62,15 +63,19 @@ def load_model_handler(model_name, scheduler_name, progress=gr.Progress()):
         current_pipe = get_pipeline_for_model(model_name)
         current_pipe.load_pipeline(progress)
         
-        logger.info(f"Setting scheduler to: {scheduler_name}")
-        SchedulerClass = SCHEDULER_MAP[scheduler_name]
-        current_pipe.pipe.scheduler = SchedulerClass.from_config(current_pipe.pipe.scheduler.config)
+        # Note: SD3 has its own specific scheduler, we let diffusers handle it.
+        if not isinstance(current_pipe, SD3Pipeline):
+            logger.info(f"Setting scheduler to: {scheduler_name}")
+            SchedulerClass = SCHEDULER_MAP[scheduler_name]
+            current_pipe.pipe.scheduler = SchedulerClass.from_config(current_pipe.pipe.scheduler.config)
 
         current_pipe.optimize_with_ipex(progress)
         
         current_model_name = model_name
         
-        if isinstance(current_pipe, SDXLPipeline):
+        if isinstance(current_pipe, SD3Pipeline):
+            default_res, model_type_str = 1024, "SD3"
+        elif isinstance(current_pipe, SDXLPipeline):
             default_res, model_type_str = 1024, "SDXL"
         elif isinstance(current_pipe, SD2Pipeline):
             default_res, model_type_str = 768, "SD 2.x"
@@ -83,7 +88,7 @@ def load_model_handler(model_name, scheduler_name, progress=gr.Progress()):
         return status_message, gr.Slider(value=default_res), gr.Slider(value=default_res)
     except Exception as e:
         logger.error(f"Failed to load model '{model_name}'. Full error: {e}", exc_info=True)
-        raise gr.Error(f"Failed to load model '{model_name}'. It may be corrupted or an unsupported type.")
+        raise gr.Error(f"Failed to load model '{model_name}'. It may be corrupted, an unsupported type, or base models failed to download.")
 
 def generate_image_handler(prompt, negative_prompt, steps, guidance, seed, width, height, progress=gr.Progress()):
     if not current_pipe: raise gr.Error("No model is loaded.")
@@ -95,9 +100,20 @@ def generate_image_handler(prompt, negative_prompt, steps, guidance, seed, width
         progress(step / int(steps), desc=f"Sampling... {step + 1}/{int(steps)}")
         return callback_kwargs
 
-    image = current_pipe.generate(prompt=prompt, negative_prompt=negative_prompt, num_inference_steps=int(steps),
-        guidance_scale=guidance, width=int(width), height=int(height), generator=generator,
-        callback_on_step_end=universal_progress_callback).images[0]
+    # For SD3, it's recommended to omit the negative prompt if it's empty
+    gen_kwargs = {
+        "prompt": prompt,
+        "num_inference_steps": int(steps),
+        "guidance_scale": guidance,
+        "width": int(width),
+        "height": int(height),
+        "generator": generator,
+        "callback_on_step_end": universal_progress_callback
+    }
+    if negative_prompt and negative_prompt.strip():
+        gen_kwargs["negative_prompt"] = negative_prompt
+
+    image = current_pipe.generate(**gen_kwargs).images[0]
 
     generation_time = time.time() - start_time
     logger.info(f"Generation completed in {generation_time:.2f} seconds.")
