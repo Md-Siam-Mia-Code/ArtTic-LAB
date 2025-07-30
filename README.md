@@ -2,9 +2,9 @@
   <img src="assets/Banner.png" alt="ArtTic-LAB Banner"/>
 </p>
 
-### Your Personal AI Art Studio, Forged for Intel ARC GPUs 🚀
+## Your Personal AI Art Studio, Forged for Intel ARC GPUs 🚀
 
-Tired of the messy, complex, and NVIDIA-centric world of AI image generation? So were we. ArtTic-LAB was born out of a simple desire: to have a **modern, clean, and powerful** tool that just _works_ on Intel ARC hardware, without the headaches.
+Tired of the messy, complex, and NVIDIA-centric world of AI image generation? So were we. ArtTic-LAB was born out of a simple desire: to have a **modern, clean, and powerful** tool that just _works_ on Intel ARC hardware, now supporting the full spectrum of Stable Diffusion models from 1.5 to the next-gen SD3.
 
 This is not just another wrapper. It's a ground-up application built for performance, aesthetics, and a user-friendly experience. Welcome home, ARC creators! ✨
 
@@ -13,27 +13,39 @@ This is not just another wrapper. It's a ground-up application built for perform
 ## 🌟 Key Features
 
 - ⚡ **Blazing Fast on Intel ARC:** Optimized from the ground up with Intel's Extension for PyTorch (IPEX) to squeeze every drop of performance from your ARC GPU.
+- 🧠 **Universal Model Support:** Automatically detects **SD1.5, SD2.x, SDXL, and next-gen SD3** models, using the correct pipeline and settings every time.
 - ✨ **Sleek & Modern UI:** No more messy command lines! A beautiful and intuitive web interface lets you focus on your creativity, not the configuration.
-- 🧠 **Smart Model Management:** Automatically detects SD 1.5 and SDXL models, using the correct pipeline every time. A "Refresh" button lets you add new models on the fly!
+- ⚙️ **Advanced Memory Management:**
+  - **VAE Tiling** is integrated and enabled by default to prevent out-of-memory errors on high-resolution generations.
+  - A one-click **"Unload Model"** button gives you direct control over your VRAM, making it easy to switch models without restarting.
 - 🎛️ **Total Creative Control:** Tweak every essential parameter:
   - Prompts & Negative Prompts
-  - Image Width & Height
+  - Image Width & Height with smart aspect-ratio presets
   - Inference Steps & Guidance Scale (CFG)
   - Seed, with a one-click randomize button 🎲
   - A selection of popular Samplers (Schedulers).
 - 🖼️ **Built-in Image Gallery:** A dedicated tab to instantly view, browse, and admire all your magnificent creations.
-- 🖥️ **Clean & Professional CLI:** Enjoy a completely silent and clean startup experience. The beautiful CLI only shows you what you need to see, with a power-user flag (`--disable-filters`) for when you want to see everything.
 
 ---
 
-## Gallery of creations
+## Gallery of Creations
 
-Here are a few examples generated entirely with ArtTic-LAB!
+Here are a few examples generated entirely with ArtTic-LAB, showcasing its capabilities.
 
 |                               |                               |                               |
 | :---------------------------: | :---------------------------: | :---------------------------: |
 | ![Demo 1](assets/demos/1.png) | ![Demo 2](assets/demos/2.png) | ![Demo 3](assets/demos/3.png) |
 | ![Demo 4](assets/demos/4.png) | ![Demo 5](assets/demos/5.png) | ![Demo 6](assets/demos/6.png) |
+
+---
+
+## The ArtTic-LAB Experience
+
+We believe in clean, intuitive design. The user interface is built to be powerful yet simple, putting all the creative tools at your fingertips without the clutter.
+
+<p align="center">
+  <img src="assets/GUI.png" alt="ArtTic-LAB User Interface"/>
+</p>
 
 ---
 
@@ -55,7 +67,7 @@ Download and unzip this project to a folder on your computer.
 
 ### 3. Run the Installer Script 🛠️
 
-This only needs to be done **once**. It will create a self-contained `ArtTic-LAB` environment and install all the magic dependencies.
+This only needs to be done **once**. It will create a self-contained `arttic-lab` environment and install all the magic dependencies.
 
 - **On Windows:**
   Double-click `install.bat` or run it from your terminal.
@@ -91,7 +103,9 @@ After the installation is finished, you're ready to launch the studio anytime.
 
 We believe your tools should be as beautiful under the hood as they are on the surface. Enjoy a completely clean, silent, and professional command-line interface that only shows you what matters.
 
-![ArtTic-LAB CLI](assets/CLI.png)
+<p align="center">
+  <img src="assets/CLI.png" alt="ArtTic-LAB CLI" />
+</p>
 
 Need to see the messy details for debugging? No problem! Launch with the `--disable-filters` flag to see all library logs.
 
@@ -105,24 +119,27 @@ Need to see the messy details for debugging? No problem! Launch with the `--disa
 For the curious minds, here's how ArtTic-LAB is organized:
 
 ```
-
 ArtTic-LAB/
-├── 📁assets/ # 🖼️ Banners and demo images for the README
-├── 📁helpers/ # 🛠️ Helper scripts like our awesome CLI manager
-│ └── cli_manager.py
-├── 📁models/ # 🧠 Drop your .safetensors models here!
-├── 📁outputs/ # 🏞️ Your generated masterpieces are saved here
-├── 📁pipelines/ # ⚙️ The core logic for SD 1.5 and SDXL models
-│ ├── sd15_pipeline.py
-│ └── sdxl_pipeline.py
-├── 📜.gitignore # Tells Git what to ignore
-├── 📜README.md # 👋 You are here!
-├── 🐍app.py # 🚀 The main application conductor
-├── 📜install.bat # 윈도우 One-click installer for Windows
-├── 📜install.sh # 🐧 One-click installer for Linux/macOS
-├── 📜start.bat # ▶️ The "Go" button for Windows
-├── 📜start.sh # ▶️ The "Go" button for Linux/macOS
-└── 🎨ui.py # ✨ The Gradio user interface code
+├── 📁assets/          # 🖼️ Banners, demos, and UI images
+├── 📁helpers/         # 🛠️ Helper scripts like our awesome CLI manager
+├── 📁models/          # 🧠 Drop your .safetensors models here!
+├── 📁outputs/         # 🏞️ Your generated masterpieces are saved here
+├── 📁pipelines/       # ⚙️ The core logic for all SD models
+│ ├── base_pipeline.py # The foundational class for all pipelines
+│ ├── sd15_pipeline.py # Handles SD 1.5 models
+│ ├── sd2_pipeline.py  # Handles SD 2.x models
+│ ├── sdxl_pipeline.py # Handles SDXL models
+│ └── sd3_pipeline.py  # Handles SD3 models
+├── 📜.gitignore       # Tells Git what to ignore
+├── 📜HOW_IT_WORKS.md  # 🧠 A deep-dive technical guide
+├── 📜LICENSE          # ⚖️ The MIT License file
+├── 📜README.md        # 👋 You are here!
+├── 🐍app.py           # 🚀 The main application conductor
+├── 📜install.bat      # 🪟 One-click installer for Windows
+├── 📜install.sh       # 🐧 One-click installer for Linux/macOS
+├── 📜start.bat        # ▶️ The "Go" button for Windows
+├── 📜start.sh         # ▶️ The "Go" button for Linux/macOS
+└── 🎨ui.py            # ✨ The Gradio user interface code
 ```
 
 ---
