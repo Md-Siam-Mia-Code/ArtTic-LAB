@@ -3,12 +3,12 @@ import gradio as gr
 
 ASPECT_RATIOS_SD15 = {"1:1": (512, 512), "4:3": (576, 448), "3:2": (608, 416), "16:9": (672, 384)}
 ASPECT_RATIOS_SD2 = {"1:1": (768, 768), "4:3": (864, 640), "3:2": (960, 640), "16:9": (1024, 576)}
-ASPECT_RATIOS_SDXL = {"1:1": (1024, 1024), "4:3": (1152, 896), "3:2": (1216, 832), "16:9": (1344, 768)}
+ASPECT_RATIOS_SDXL_SD3 = {"1:1": (1024, 1024), "4:3": (1152, 896), "3:2": (1216, 832), "16:9": (1344, 768)}
 
 def create_ui(available_models, schedulers_list, handlers):
     with gr.Blocks(theme=gr.themes.Soft(), css="footer {display: none !important}") as app:
         gr.Markdown("# 🎨 ArtTic-LAB")
-        gr.Markdown("v1.1: The Performance & Power Update")
+        gr.Markdown("v1.2: The Next-Gen SD3 Update")
 
         with gr.Tabs():
             with gr.TabItem("Generate"):
@@ -21,7 +21,7 @@ def create_ui(available_models, schedulers_list, handlers):
                             refresh_models_btn = gr.Button("🔄 Refresh Models")
                         
                         prompt = gr.Textbox(label="Prompt", value="photo of a beautiful woman, 8k, ultra realistic, cinematic", lines=3)
-                        negative_prompt = gr.Textbox(label="Negative Prompt", placeholder="e.g., ugly, deformed, blurry", lines=2)
+                        negative_prompt = gr.Textbox(label="Negative Prompt", placeholder="e.g., ugly, deformed, blurry (optional for SD3)", lines=2)
                         
                         with gr.Accordion("Advanced Options", open=False):
                             scheduler_dropdown = gr.Dropdown(label="Sampler", choices=schedulers_list, value=schedulers_list[0])
@@ -31,7 +31,7 @@ def create_ui(available_models, schedulers_list, handlers):
                                 swap_dims_btn = gr.Button("↔️", min_width=50, elem_id="swap-button")
                                 height_slider = gr.Slider(label="Height", minimum=256, maximum=2048, value=512, step=64)
                             
-                            gr.Markdown("Set Resolution (SD1.5 / SD2 / SDXL)")
+                            gr.Markdown("Set Resolution (SD1.5 / SD2 / SDXL & SD3)")
                             with gr.Row():
                                 aspect_1_1 = gr.Button("1:1")
                                 aspect_4_3 = gr.Button("4:3")
@@ -39,8 +39,8 @@ def create_ui(available_models, schedulers_list, handlers):
                                 aspect_16_9 = gr.Button("16:9")
                         
                         with gr.Row():
-                            steps = gr.Slider(label="Steps", minimum=1, maximum=100, value=30, step=1)
-                            guidance = gr.Slider(label="Guidance Scale", minimum=1, maximum=20, value=7.5, step=0.1)
+                            steps = gr.Slider(label="Steps", minimum=1, maximum=100, value=28, step=1) # SD3 default
+                            guidance = gr.Slider(label="Guidance Scale", minimum=1, maximum=20, value=7.0, step=0.1)
                         with gr.Row():
                             seed = gr.Number(label="Seed", value=12345, precision=0)
                             randomize_seed_btn = gr.Button("🎲", min_width=50)
@@ -55,8 +55,8 @@ def create_ui(available_models, schedulers_list, handlers):
                 refresh_gallery_btn = gr.Button("Refresh Gallery")
 
         def set_aspect_ratio(ratio_key, status_str):
-            if "SDXL" in status_str:
-                ratios, default_res = ASPECT_RATIOS_SDXL, (1024, 1024)
+            if "SDXL" in status_str or "SD3" in status_str:
+                ratios, default_res = ASPECT_RATIOS_SDXL_SD3, (1024, 1024)
             elif "SD 2.x" in status_str:
                 ratios, default_res = ASPECT_RATIOS_SD2, (768, 768)
             else:
