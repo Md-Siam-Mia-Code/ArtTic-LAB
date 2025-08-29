@@ -287,13 +287,20 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- Event Listeners Setup ---
   function setupEventListeners() {
     document.querySelectorAll(".range-input").forEach((slider) => {
-      const valueDisplay = document.getElementById(`${slider.id}-value`);
+      // *** FIX IS HERE ***
+      // Correctly derive the value-display ID from the slider ID
+      const valueDisplayId = slider.id.replace("-slider", "-value");
+      const valueDisplay = document.getElementById(valueDisplayId);
+
       const updateFunc = () => {
         const suffix =
           slider.id.includes("width") || slider.id.includes("height")
             ? "px"
             : "";
-        if (valueDisplay) valueDisplay.textContent = slider.value + suffix;
+        if (valueDisplay) {
+          // Check if the element exists before trying to set its content
+          valueDisplay.textContent = slider.value + suffix;
+        }
         updateSliderBackground(slider);
       };
       slider.addEventListener("input", updateFunc);
