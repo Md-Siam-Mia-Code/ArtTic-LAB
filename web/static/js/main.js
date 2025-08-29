@@ -1,66 +1,14 @@
 // web/static/js/main.js
 
 document.addEventListener("DOMContentLoaded", () => {
-  // --- Application State ---
+  // --- Application State & Constants ---
   const state = {
     isModelLoaded: false,
-    isGenerating: false,
-    isBusy: false, // General busy state for loading or generating
-    modelType: "SD 1.5", // Default model type
+    isBusy: false,
+    modelType: "SD 1.5",
     socket: null,
   };
-
-  // --- DOM Element Cache ---
-  const ui = {
-    // Connection status
-    connectionStatus: document.getElementById("connection-status"),
-    // Pages and Navigation
-    sidebarLinks: document.querySelectorAll(".sidebar-link"),
-    pages: {
-      generate: document.getElementById("page-generate"),
-      gallery: document.getElementById("page-gallery"),
-    },
-    // Model Controls
-    modelSelect: document.getElementById("model-select"),
-    loadModelBtn: document.getElementById("load-model-btn"),
-    unloadModelBtn: document.getElementById("unload-model-btn"),
-    refreshModelsBtn: document.getElementById("refresh-models-btn"),
-    statusText: document.getElementById("status-text"),
-    // Generation Parameters
-    prompt: document.getElementById("prompt"),
-    negativePrompt: document.getElementById("negative-prompt"),
-    stepsSlider: document.getElementById("steps-slider"),
-    stepsValue: document.getElementById("steps-value"),
-    guidanceSlider: document.getElementById("guidance-slider"),
-    guidanceValue: document.getElementById("guidance-value"),
-    widthSlider: document.getElementById("width-slider"),
-    widthValue: document.getElementById("width-value"),
-    heightSlider: document.getElementById("height-slider"),
-    heightValue: document.getElementById("height-value"),
-    aspectRatioBtns: document.getElementById("aspect-ratio-btns"),
-    seedInput: document.getElementById("seed-input"),
-    randomizeSeedBtn: document.getElementById("randomize-seed-btn"),
-    // Advanced Options
-    samplerSelect: document.getElementById("sampler-select"),
-    vaeTilingCheckbox: document.getElementById("vae-tiling-checkbox"),
-    cpuOffloadCheckbox: document.getElementById("cpu-offload-checkbox"),
-    // Generation & Output
-    generateBtn: document.getElementById("generate-btn"),
-    outputImage: document.getElementById("output-image"),
-    imagePlaceholder: document.getElementById("image-placeholder"),
-    infoText: document.getElementById("info-text"),
-    // Progress Bar
-    progressContainer: document.getElementById("progress-container"),
-    progressLabel: document.getElementById("progress-label"),
-    progressPercent: document.getElementById("progress-percent"),
-    progressBarFill: document.getElementById("progress-bar-fill"),
-    // Gallery
-    galleryGrid: document.getElementById("gallery-grid"),
-    galleryPlaceholder: document.getElementById("gallery-placeholder"),
-    refreshGalleryBtn: document.getElementById("refresh-gallery-btn"),
-  };
-
-  // --- Aspect Ratio Presets ---
+  const SIDEBAR_COLLAPSED_KEY = "sidebarCollapsed";
   const ASPECT_RATIOS = {
     "SD 1.5": {
       "1:1": [512, 512],
@@ -88,28 +36,84 @@ document.addEventListener("DOMContentLoaded", () => {
     },
   };
 
+  // --- DOM Element Cache ---
+  const ui = {
+    appContainer: document.getElementById("app-container"),
+    connectionStatus: document.getElementById("connection-status"),
+    sidebar: {
+      wrapper: document.querySelector(".sidebar-wrapper"),
+      toggleBtn: document.getElementById("sidebar-toggle-btn"),
+      links: document.querySelectorAll(".sidebar-link"),
+    },
+    pages: {
+      generate: document.getElementById("page-generate"),
+      gallery: document.getElementById("page-gallery"),
+    },
+    model: {
+      dropdown: document.getElementById("model-dropdown"),
+      samplerDropdown: document.getElementById("sampler-dropdown"),
+      loadBtn: document.getElementById("load-model-btn"),
+      unloadBtn: document.getElementById("unload-model-btn"),
+      statusText: document.getElementById("status-text"),
+    },
+    params: {
+      prompt: document.getElementById("prompt"),
+      negativePrompt: document.getElementById("negative-prompt"),
+      stepsSlider: document.getElementById("steps-slider"),
+      stepsValue: document.getElementById("steps-value"),
+      guidanceSlider: document.getElementById("guidance-slider"),
+      guidanceValue: document.getElementById("guidance-value"),
+      widthSlider: document.getElementById("width-slider"),
+      widthValue: document.getElementById("width-value"),
+      heightSlider: document.getElementById("height-slider"),
+      heightValue: document.getElementById("height-value"),
+      aspectRatioBtns: document.getElementById("aspect-ratio-btns"),
+      seedInput: document.getElementById("seed-input"),
+      randomizeSeedBtn: document.getElementById("randomize-seed-btn"),
+      vaeTilingCheckbox: document.getElementById("vae-tiling-checkbox"),
+      cpuOffloadCheckbox: document.getElementById("cpu-offload-checkbox"),
+    },
+    generate: {
+      btn: document.getElementById("generate-btn"),
+      outputImage: document.getElementById("output-image"),
+      imagePlaceholder: document.getElementById("image-placeholder"),
+      infoText: document.getElementById("info-text"),
+    },
+    progress: {
+      container: document.getElementById("progress-container"),
+      label: document.getElementById("progress-label"),
+      percent: document.getElementById("progress-percent"),
+      barFill: document.getElementById("progress-bar-fill"),
+    },
+    gallery: {
+      grid: document.getElementById("gallery-grid"),
+      placeholder: document.getElementById("gallery-placeholder"),
+      refreshBtn: document.getElementById("refresh-gallery-btn"),
+    },
+    lightbox: {
+      container: document.getElementById("lightbox"),
+      closeBtn: document.getElementById("lightbox-close"),
+      img: document.getElementById("lightbox-img"),
+      caption: document.getElementById("lightbox-caption"),
+    },
+  };
+
   // --- WebSocket Communication ---
   function connectWebSocket() {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const url = `${protocol}//${window.location.host}/ws`;
+    const url = `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${
+      window.location.host
+    }/ws`;
     state.socket = new WebSocket(url);
-
-    state.socket.onopen = () => {
-      console.log("WebSocket connected.");
+    state.socket.onopen = () =>
       updateConnectionStatus("Connected", "connected");
-    };
-
     state.socket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      handleWebSocketMessage(message.type, message.data);
+      const { type, data } = JSON.parse(event.data);
+      handleWebSocketMessage(type, data);
     };
-
     state.socket.onclose = () => {
-      console.warn("WebSocket disconnected. Attempting to reconnect...");
-      updateConnectionStatus("Disconnected", "disconnected");
-      setTimeout(connectWebSocket, 3000); // Reconnect after 3 seconds
+      updateConnectionStatus("Reconnecting...", "connecting");
+      setTimeout(connectWebSocket, 3000);
     };
-
     state.socket.onerror = (error) => {
       console.error("WebSocket error:", error);
       updateConnectionStatus("Error", "disconnected");
@@ -118,220 +122,222 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function sendMessage(action, payload = {}) {
-    if (state.socket && state.socket.readyState === WebSocket.OPEN) {
+    if (state.socket?.readyState === WebSocket.OPEN) {
       state.socket.send(JSON.stringify({ action, payload }));
-    } else {
-      console.error("WebSocket is not connected.");
     }
   }
+
+  const messageHandlers = {
+    model_loaded: (data) => {
+      state.isModelLoaded = true;
+      state.modelType = data.model_type;
+      updateStatus(data.status_message, "ready");
+      setDimensions(data.width, data.height);
+      setBusyState(false);
+    },
+    generation_complete: (data) => {
+      ui.generate.outputImage.src = `/outputs/${
+        data.image_filename
+      }?t=${Date.now()}`;
+      ui.generate.outputImage.classList.remove("hidden");
+      ui.generate.imagePlaceholder.classList.add("hidden");
+      ui.generate.infoText.textContent = data.info;
+      setBusyState(false);
+    },
+    model_unloaded: (data) => {
+      state.isModelLoaded = false;
+      updateStatus(data.status_message, "unloaded");
+      setBusyState(false);
+    },
+    progress_update: (data) => {
+      showProgressBar(true);
+      ui.progress.label.textContent = data.description;
+      const percent = Math.round(data.progress * 100);
+      ui.progress.percent.textContent = `${percent}%`;
+      ui.progress.barFill.style.width = `${percent}%`;
+    },
+    gallery_updated: (data) => populateGallery(data.images),
+    error: (data) => {
+      alert(`An error occurred: ${data.message}`);
+      setBusyState(false);
+    },
+  };
 
   function handleWebSocketMessage(type, data) {
-    switch (type) {
-      case "model_loaded":
-        state.isModelLoaded = true;
-        state.modelType = data.model_type;
-        updateStatus(data.status_message, "ready");
-        setDimensions(data.width, data.height);
-        setBusyState(false);
-        break;
-      case "generation_complete":
-        ui.outputImage.src = `/outputs/${
-          data.image_filename
-        }?t=${new Date().getTime()}`;
-        ui.outputImage.classList.remove("hidden");
-        ui.imagePlaceholder.classList.add("hidden");
-        ui.infoText.textContent = data.info;
-        setBusyState(false, true);
-        break;
-      case "model_unloaded":
-        state.isModelLoaded = false;
-        updateStatus(data.status_message, "unloaded");
-        setBusyState(false);
-        break;
-      case "progress_update":
-        showProgressBar(true);
-        ui.progressLabel.textContent = data.description;
-        const percent = Math.round(data.progress * 100);
-        ui.progressPercent.textContent = `${percent}%`;
-        ui.progressBarFill.style.width = `${percent}%`;
-        break;
-      case "gallery_updated":
-        populateGallery(data.images);
-        break;
-      case "error":
-        alert(`An error occurred: ${data.message}`);
-        setBusyState(false);
-        break;
-    }
+    (
+      messageHandlers[type] ||
+      (() => console.warn(`Unhandled message type: ${type}`))
+    )(data);
   }
 
-  // --- UI Update Functions ---
-  function setBusyState(isBusy, isGeneration = false) {
+  // --- UI Update & Control Functions ---
+  function setBusyState(isBusy) {
     state.isBusy = isBusy;
-    state.isGenerating = isBusy && isGeneration;
-
-    // Toggle disabled state on all major controls
-    const controls = [
-      ui.loadModelBtn,
-      ui.unloadModelBtn,
-      ui.generateBtn,
-      ui.modelSelect,
-      ui.prompt,
-      ui.negativePrompt,
-      ui.stepsSlider,
-      ui.guidanceSlider,
-      ui.widthSlider,
-      ui.heightSlider,
-      ui.seedInput,
-      ui.randomizeSeedBtn,
-      ...ui.aspectRatioBtns.children,
-    ];
-    controls.forEach((el) => (el.disabled = isBusy));
-
+    ui.appContainer.style.cursor = isBusy ? "wait" : "default";
+    if (!isBusy) showProgressBar(false);
+    // Disable all inputs/buttons during busy state
+    document
+      .querySelectorAll("button, input, textarea, .custom-dropdown")
+      .forEach((el) => {
+        el.classList.toggle("disabled", isBusy);
+        el.disabled = isBusy;
+      });
+    // Re-enable based on logic after unlocking
     if (!isBusy) {
-      showProgressBar(false);
-      // Re-enable unload/generate based on model state
-      ui.unloadModelBtn.disabled = !state.isModelLoaded;
-      ui.generateBtn.disabled = !state.isModelLoaded;
+      ui.model.unloadBtn.disabled = !state.isModelLoaded;
+      ui.generate.btn.disabled = !state.isModelLoaded;
     }
   }
 
   function updateStatus(message, statusClass) {
-    ui.statusText.textContent = message;
-    ui.statusText.className = `status-${statusClass}`;
+    ui.model.statusText.textContent = message;
+    ui.model.statusText.className = `status-${statusClass}`;
   }
 
   function showProgressBar(show) {
-    ui.progressContainer.classList.toggle("hidden", !show);
+    ui.progress.container.classList.toggle("hidden", !show);
   }
-
   function updateConnectionStatus(text, statusClass) {
+    const parent = ui.connectionStatus.parentElement;
     ui.connectionStatus.textContent = text;
-    ui.connectionStatus.className = `status-indicator-text ${statusClass}`;
+    parent.className = "status-indicator"; // Reset class
+    parent.classList.add(statusClass);
   }
 
-  function populateSelect(selectElement, options) {
-    selectElement.innerHTML = "";
+  function setDimensions(width, height) {
+    ui.params.widthSlider.value = width;
+    ui.params.widthValue.textContent = `${width}px`;
+    ui.params.heightSlider.value = height;
+    ui.params.heightValue.textContent = `${height}px`;
+  }
+
+  // --- Custom Components ---
+  function createCustomDropdown(container, options, onSelect) {
+    container.innerHTML = `
+            <div class="dropdown-selected" tabindex="0">
+                <span class="selected-text">${options[0] || "No options"}</span>
+            </div>
+            <ul class="dropdown-options"></ul>
+        `;
+    const selected = container.querySelector(".selected-text");
+    const optionsList = container.querySelector(".dropdown-options");
+
     options.forEach((option) => {
-      const opt = document.createElement("option");
-      opt.value = option;
-      opt.textContent = option;
-      selectElement.appendChild(opt);
+      const li = document.createElement("li");
+      li.className = "dropdown-option";
+      li.textContent = option;
+      li.dataset.value = option;
+      optionsList.appendChild(li);
+    });
+
+    container.dataset.value = options[0] || "";
+    if (options[0]) optionsList.querySelector("li").classList.add("selected");
+
+    container.addEventListener("click", (e) => {
+      if (!container.classList.contains("disabled")) {
+        e.stopPropagation();
+        container.classList.toggle("open");
+      }
+    });
+
+    optionsList.addEventListener("click", (e) => {
+      if (e.target.tagName === "LI") {
+        container.dataset.value = e.target.dataset.value;
+        selected.textContent = e.target.textContent;
+        optionsList
+          .querySelectorAll("li")
+          .forEach((li) => li.classList.remove("selected"));
+        e.target.classList.add("selected");
+        onSelect?.(e.target.dataset.value);
+      }
     });
   }
 
   function populateGallery(images) {
-    ui.galleryGrid.innerHTML = "";
-    if (images && images.length > 0) {
-      ui.galleryPlaceholder.classList.add("hidden");
+    ui.gallery.grid.innerHTML = "";
+    const hasImages = images?.length > 0;
+    ui.gallery.placeholder.classList.toggle("hidden", hasImages);
+    if (hasImages) {
       images.forEach((imageFile) => {
         const item = document.createElement("div");
         item.className = "gallery-item";
-        item.innerHTML = `
-                    <img src="/outputs/${imageFile}" alt="${imageFile}" class="gallery-item-image" loading="lazy">
-                    <div class="gallery-item-overlay">
-                        <div class="gallery-item-actions">
-                            <a href="/outputs/${imageFile}" download class="gallery-item-action-btn" title="Download">
-                                <span class="material-symbols-outlined">download</span>
-                            </a>
-                            <a href="/outputs/${imageFile}" target="_blank" class="gallery-item-action-btn" title="Open in New Tab">
-                                <span class="material-symbols-outlined">open_in_new</span>
-                            </a>
-                        </div>
-                    </div>
-                `;
-        ui.galleryGrid.appendChild(item);
+        item.innerHTML = `<img src="/outputs/${imageFile}" alt="${imageFile}" class="gallery-item-image" loading="lazy">`;
+        item.addEventListener("click", () =>
+          openLightbox(`/outputs/${imageFile}`, imageFile)
+        );
+        ui.gallery.grid.appendChild(item);
       });
-    } else {
-      ui.galleryPlaceholder.classList.remove("hidden");
     }
   }
 
-  function setDimensions(width, height) {
-    ui.widthSlider.value = width;
-    ui.widthValue.textContent = `${width}px`;
-    ui.heightSlider.value = height;
-    ui.heightValue.textContent = `${height}px`;
+  function openLightbox(src, caption) {
+    ui.lightbox.img.src = src;
+    ui.lightbox.caption.textContent = caption;
+    ui.lightbox.container.classList.remove("hidden");
   }
 
-  // --- Event Listeners ---
+  // --- Event Listeners Setup ---
   function setupEventListeners() {
-    // Slider value displays
+    // Sliders value displays
     ["steps", "guidance", "width", "height"].forEach((id) => {
-      const slider = ui[`${id}Slider`];
-      const valueDisplay = ui[`${id}Value`];
+      const slider = ui.params[`${id}Slider`],
+        valueDisplay = ui.params[`${id}Value`];
       slider.addEventListener("input", () => {
-        valueDisplay.textContent =
-          id === "guidance"
-            ? slider.value
-            : `${slider.value}${id.includes("Slider") ? "" : "px"}`;
-        if (id === "width" || id === "height") {
-          valueDisplay.textContent += "px";
-        }
+        const suffix = id === "width" || id === "height" ? "px" : "";
+        valueDisplay.textContent = slider.value + suffix;
       });
     });
 
-    // Navigation
-    ui.sidebarLinks.forEach((link) => {
+    // Sidebar and Navigation
+    ui.sidebar.toggleBtn.addEventListener("click", () => {
+      const isCollapsed = ui.appContainer.classList.toggle("sidebar-collapsed");
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, isCollapsed);
+    });
+    ui.sidebar.links.forEach((link) => {
       link.addEventListener("click", (e) => {
         e.preventDefault();
-        const targetId = `page-${link.dataset.target}`;
-
-        // Update active link
-        ui.sidebarLinks.forEach((l) => l.classList.remove("active"));
+        ui.sidebar.links.forEach((l) => l.classList.remove("active"));
         link.classList.add("active");
-
-        // Show target page, hide others
-        Object.values(ui.pages).forEach((page) => {
-          page.id === targetId
-            ? page.classList.remove("hidden")
-            : page.classList.add("hidden");
-        });
+        Object.values(ui.pages).forEach((page) => page.classList.add("hidden"));
+        ui.pages[link.dataset.target].classList.remove("hidden");
       });
     });
 
     // Model Actions
-    ui.loadModelBtn.addEventListener("click", () => {
+    ui.model.loadBtn.addEventListener("click", () => {
       setBusyState(true);
       updateStatus("Loading model...", "busy");
-      showProgressBar(true);
       sendMessage("load_model", {
-        model_name: ui.modelSelect.value,
-        scheduler_name: ui.samplerSelect.value,
-        vae_tiling: ui.vaeTilingCheckbox.checked,
-        cpu_offload: ui.cpuOffloadCheckbox.checked,
+        model_name: ui.model.dropdown.dataset.value,
+        scheduler_name: ui.model.samplerDropdown.dataset.value,
+        vae_tiling: ui.params.vaeTilingCheckbox.checked,
+        cpu_offload: ui.params.cpuOffloadCheckbox.checked,
       });
     });
-
-    ui.unloadModelBtn.addEventListener("click", () => {
+    ui.model.unloadBtn.addEventListener("click", () => {
       setBusyState(true);
       updateStatus("Unloading model...", "busy");
       sendMessage("unload_model");
     });
 
-    ui.refreshModelsBtn.addEventListener("click", () => init());
-
     // Generation Actions
-    ui.generateBtn.addEventListener("click", () => {
-      setBusyState(true, true);
-      ui.infoText.textContent = "";
-      showProgressBar(true);
+    ui.generate.btn.addEventListener("click", () => {
+      setBusyState(true);
+      ui.generate.infoText.textContent = "";
       sendMessage("generate_image", {
-        prompt: ui.prompt.value,
-        negative_prompt: ui.negativePrompt.value,
-        steps: parseInt(ui.stepsSlider.value),
-        guidance: parseFloat(ui.guidanceSlider.value),
-        seed: parseInt(ui.seedInput.value),
-        width: parseInt(ui.widthSlider.value),
-        height: parseInt(ui.heightSlider.value),
+        prompt: ui.params.prompt.value,
+        negative_prompt: ui.params.negativePrompt.value,
+        steps: parseInt(ui.params.stepsSlider.value),
+        guidance: parseFloat(ui.params.guidanceSlider.value),
+        seed: parseInt(ui.params.seedInput.value),
+        width: parseInt(ui.params.widthSlider.value),
+        height: parseInt(ui.params.heightSlider.value),
       });
     });
-
-    ui.randomizeSeedBtn.addEventListener("click", () => {
-      ui.seedInput.value = Math.floor(Math.random() * 2 ** 32);
+    ui.params.randomizeSeedBtn.addEventListener("click", () => {
+      ui.params.seedInput.value = Math.floor(Math.random() * 2 ** 32);
     });
-
-    ui.aspectRatioBtns.addEventListener("click", (e) => {
+    ui.params.aspectRatioBtns.addEventListener("click", (e) => {
       const btn = e.target.closest(".btn-aspect-ratio");
       if (btn && !state.isBusy) {
         const ratio = btn.dataset.ratio;
@@ -339,8 +345,7 @@ document.addEventListener("DOMContentLoaded", () => {
           ASPECT_RATIOS[state.modelType] || ASPECT_RATIOS["SD 1.5"];
         if (presets[ratio]) {
           setDimensions(...presets[ratio]);
-          // Update active button style
-          ui.aspectRatioBtns
+          ui.params.aspectRatioBtns
             .querySelectorAll("button")
             .forEach((b) => b.classList.remove("active"));
           btn.classList.add("active");
@@ -348,33 +353,49 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    // Gallery Actions
-    ui.refreshGalleryBtn.addEventListener("click", () => {
-      // Re-fetch initial config to get the latest gallery
-      init();
+    // Gallery & Lightbox
+    ui.gallery.refreshBtn.addEventListener("click", init);
+    ui.lightbox.closeBtn.addEventListener("click", () =>
+      ui.lightbox.container.classList.add("hidden")
+    );
+    ui.lightbox.container.addEventListener("click", (e) => {
+      if (e.target === ui.lightbox.container)
+        ui.lightbox.container.classList.add("hidden");
     });
   }
 
   // --- Initialization ---
   async function init() {
+    // Set sidebar state from localStorage
+    if (localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true") {
+      ui.appContainer.classList.add("sidebar-collapsed");
+    }
+
     try {
       const response = await fetch("/api/config");
+      if (!response.ok)
+        throw new Error(`HTTP error! status: ${response.status}`);
       const config = await response.json();
 
-      populateSelect(ui.modelSelect, config.models);
-      populateSelect(ui.samplerSelect, config.schedulers);
+      createCustomDropdown(ui.model.dropdown, config.models);
+      createCustomDropdown(ui.model.samplerDropdown, config.schedulers);
       populateGallery(config.gallery_images);
 
-      // Set initial state
       setBusyState(false);
     } catch (error) {
       console.error("Failed to fetch initial config:", error);
-      alert("Could not load initial configuration from the server.");
+      alert("Could not load configuration from the server. Please refresh.");
     }
   }
 
-  // Start the application
+  // Start application
   init();
   connectWebSocket();
   setupEventListeners();
+  // Close dropdowns if clicked outside
+  document.addEventListener("click", () =>
+    document
+      .querySelectorAll(".custom-dropdown.open")
+      .forEach((d) => d.classList.remove("open"))
+  );
 });
