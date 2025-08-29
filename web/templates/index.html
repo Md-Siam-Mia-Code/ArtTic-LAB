@@ -5,14 +5,13 @@
      <meta charset="utf-8" />
      <meta content="width=device-width, initial-scale=1.0" name="viewport" />
      <title>ArtTic-LAB</title>
-     <!-- Favicon and Fonts -->
      <link rel="icon" href="../static/asset/logo.svg" type="image/svg+xml">
      <link href="https://fonts.googleapis.com" rel="preconnect" />
      <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
      <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Silkscreen:wght@400;700&display=swap"
           rel="stylesheet">
      <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
-     <!-- Main Stylesheet -->
+     <link rel="shortcut icon" href="../static/asset/logo.svg" type="image/x-icon">
      <link href="/static/css/style.css" rel="stylesheet" />
 </head>
 
@@ -25,18 +24,15 @@
                     <h1 class="app-title">ArtTic-LAB</h1>
                </div>
                <nav class="nav-links">
-                    <a class="nav-link active" href="#" data-target="generate">
-                         <span class="material-symbols-outlined">auto_awesome</span> Generate
-                    </a>
-                    <a class="nav-link" href="#" data-target="gallery">
-                         <span class="material-symbols-outlined">photo_library</span> Gallery
-                    </a>
+                    <a class="nav-link active" href="#" data-target="generate"><span
+                              class="material-symbols-outlined">auto_awesome</span> Generate</a>
+                    <a class="nav-link" href="#" data-target="gallery"><span
+                              class="material-symbols-outlined">photo_library</span> Gallery</a>
                </nav>
           </div>
           <div class="nav-right">
-               <div id="status-indicator" class="status-indicator connecting">
-                    <span id="connection-status">Connecting...</span>
-               </div>
+               <div id="status-indicator" class="status-indicator connecting"><span
+                         id="connection-status">Connecting...</span></div>
           </div>
      </header>
 
@@ -45,134 +41,111 @@
           <!-- Generate Page Content -->
           <div id="page-generate" class="page-content">
                <div class="grid-container">
-                    <!-- Left Column: Model & Prompting -->
+                    <!-- Left Column -->
                     <div class="control-column">
                          <div class="content-card">
                               <h2 class="card-title">Model & Sampler</h2>
-                              <div class="control-group">
-                                   <label for="model-dropdown">Model</label>
+                              <div class="control-group"><label for="model-dropdown">Model</label>
                                    <div id="model-dropdown" class="custom-dropdown"></div>
                               </div>
-                              <div class="control-group">
-                                   <label for="sampler-dropdown">Sampler</label>
+                              <div class="control-group"><label for="sampler-dropdown">Sampler</label>
                                    <div id="sampler-dropdown" class="custom-dropdown"></div>
                               </div>
-                              <div class="compact-info-card" id="status-card">
-                                   <span class="material-symbols-outlined icon-unloaded">memory</span>
+                              <div class="compact-info-card" id="status-card"><span
+                                        class="material-symbols-outlined icon-unloaded">memory</span>
                                    <p id="status-text">No model loaded.</p>
                               </div>
-                              <div class="grid-col-2">
-                                   <button id="load-model-btn" class="btn btn-primary"><span
-                                             class="material-symbols-outlined">hub</span> Load</button>
-                                   <button id="unload-model-btn" class="btn btn-secondary"><span
-                                             class="material-symbols-outlined">cancel</span> Unload</button>
-                              </div>
+                              <div class="grid-col-2"><button id="load-model-btn" class="btn btn-primary"><span
+                                             class="material-symbols-outlined">hub</span> Load</button><button
+                                        id="unload-model-btn" class="btn btn-secondary"><span
+                                             class="material-symbols-outlined">cancel</span> Unload</button></div>
                          </div>
                          <div class="content-card">
                               <h2 class="card-title">Prompting</h2>
-                              <div class="control-group">
-                                   <label for="prompt">Prompt</label>
-                                   <textarea id="prompt" class="form-textarea"
+                              <div class="control-group"><label for="prompt">Prompt</label><textarea id="prompt"
+                                        class="form-textarea"
                                         placeholder="A cinematic photo of...">photo of a beautiful woman, 8k, ultra realistic, cinematic</textarea>
                               </div>
-                              <div class="control-group">
-                                   <label for="negative-prompt">Negative Prompt</label>
-                                   <textarea id="negative-prompt" class="form-textarea"
-                                        placeholder="ugly, deformed, blurry..."></textarea>
-                              </div>
+                              <div class="control-group"><label for="negative-prompt">Negative Prompt</label><textarea
+                                        id="negative-prompt" class="form-textarea"
+                                        placeholder="ugly, deformed, blurry..."></textarea></div>
                          </div>
                     </div>
 
-                    <!-- Middle Column: Generation Parameters -->
+                    <!-- Middle Column -->
                     <div class="parameters-column">
                          <div class="content-card">
                               <h2 class="card-title">Parameters</h2>
                               <div class="control-group">
-                                   <div class="flex-between">
-                                        <label for="steps-slider">Steps</label>
-                                        <span class="slider-value" id="steps-value">28</span>
-                                   </div>
-                                   <div class="slider-container">
-                                        <input type="range" id="steps-slider" class="range-input" min="1" max="100"
-                                             value="28" step="1">
-                                   </div>
+                                   <div class="flex-between"><label for="steps-slider">Steps</label><span
+                                             class="slider-value" id="steps-value">28</span></div>
+                                   <div class="slider-container"><input type="range" id="steps-slider"
+                                             class="range-input" min="1" max="100" value="28" step="1"></div>
                               </div>
                               <div class="control-group">
-                                   <div class="flex-between">
-                                        <label for="guidance-slider">Guidance (CFG)</label>
-                                        <span class="slider-value" id="guidance-value">7.0</span>
-                                   </div>
-                                   <div class="slider-container">
-                                        <input type="range" id="guidance-slider" class="range-input" min="1" max="20"
-                                             value="7.0" step="0.1">
-                                   </div>
+                                   <div class="flex-between"><label for="guidance-slider">Guidance (CFG)</label><span
+                                             class="slider-value" id="guidance-value">7.0</span></div>
+                                   <div class="slider-container"><input type="range" id="guidance-slider"
+                                             class="range-input" min="1" max="20" value="7.0" step="0.1"></div>
                               </div>
-                              <div class="control-group">
-                                   <label for="seed-input">Seed</label>
-                                   <div class="input-with-button">
-                                        <input type="number" id="seed-input" value="12345" class="form-input">
-                                        <button id="randomize-seed-btn" class="btn btn-icon"
+                              <div class="control-group"><label for="seed-input">Seed</label>
+                                   <div class="input-with-button"><input type="number" id="seed-input" value="12345"
+                                             class="form-input"><button id="randomize-seed-btn" class="btn btn-icon"
                                              title="Randomize Seed"><span
-                                                  class="material-symbols-outlined">casino</span></button>
-                                   </div>
+                                                  class="material-symbols-outlined">casino</span></button></div>
                               </div>
                               <h2 class="card-title sub-title">Dimensions</h2>
                               <div class="control-group">
-                                   <div class="flex-between">
-                                        <label for="width-slider">Width</label>
-                                        <span class="slider-value" id="width-value">512px</span>
-                                   </div>
-                                   <div class="slider-container">
-                                        <input type="range" id="width-slider" class="range-input" min="256" max="2048"
-                                             value="512" step="64">
-                                   </div>
+                                   <div class="flex-between"><label for="width-slider">Width</label><span
+                                             class="slider-value" id="width-value">512px</span></div>
+                                   <div class="slider-container"><input type="range" id="width-slider"
+                                             class="range-input" min="256" max="2048" value="512" step="64"></div>
                               </div>
                               <div class="control-group">
-                                   <div class="flex-between">
-                                        <label for="height-slider">Height</label>
-                                        <span class="slider-value" id="height-value">512px</span>
-                                   </div>
-                                   <div class="slider-container">
-                                        <input type="range" id="height-slider" class="range-input" min="256" max="2048"
-                                             value="512" step="64">
-                                   </div>
+                                   <div class="flex-between"><label for="height-slider">Height</label><span
+                                             class="slider-value" id="height-value">512px</span></div>
+                                   <div class="slider-container"><input type="range" id="height-slider"
+                                             class="range-input" min="256" max="2048" value="512" step="64"></div>
                               </div>
-                              <div class="control-group">
-                                   <label>Aspect Ratios</label>
-                                   <div class="grid-col-4" id="aspect-ratio-btns">
-                                        <button class="btn btn-aspect-ratio active" data-ratio="1:1">1:1</button>
-                                        <button class="btn btn-aspect-ratio" data-ratio="4:3">4:3</button>
-                                        <button class="btn btn-aspect-ratio" data-ratio="3:2">3:2</button>
-                                        <button class="btn btn-aspect-ratio" data-ratio="16:9">16:9</button>
-                                   </div>
+                              <div class="control-group"><label>Aspect Ratios</label>
+                                   <div class="grid-col-4" id="aspect-ratio-btns"><button
+                                             class="btn btn-aspect-ratio active" data-ratio="1:1">1:1</button><button
+                                             class="btn btn-aspect-ratio" data-ratio="4:3">4:3</button><button
+                                             class="btn btn-aspect-ratio" data-ratio="3:2">3:2</button><button
+                                             class="btn btn-aspect-ratio" data-ratio="16:9">16:9</button></div>
                               </div>
-                              <div class="control-group grid-col-2">
+
+                              <div class="control-group checkbox-group">
                                    <label class="checkbox-label"><input type="checkbox" id="vae-tiling-checkbox"
-                                             class="form-checkbox" checked> VAE Tiling</label>
-                                   <label class="checkbox-label"><input type="checkbox" id="cpu-offload-checkbox"
-                                             class="form-checkbox"> CPU Offload</label>
+                                             checked><span>VAE Tiling</span></label>
+                                   <p class="checkbox-helper">Reduces VRAM usage for high resolutions at a slight
+                                        performance cost.</p>
+                              </div>
+                              <div class="control-group checkbox-group">
+                                   <label class="checkbox-label"><input type="checkbox"
+                                             id="cpu-offload-checkbox"><span>CPU Offload</span></label>
+                                   <p class="checkbox-helper">Drastically reduces VRAM usage by using system RAM, but is
+                                        much slower.</p>
                               </div>
                          </div>
                     </div>
 
-                    <!-- Right Column: Image and Action -->
+                    <!-- Right Column -->
                     <div class="generation-column">
                          <div class="image-preview-area">
                               <div class="image-preview-wrapper">
-                                   <div id="image-placeholder" class="image-placeholder">
-                                        <span class="material-symbols-outlined">wallpaper</span>
+                                   <div id="image-placeholder" class="image-placeholder"><span
+                                             class="material-symbols-outlined">wallpaper</span>
                                         <p>Your creation appears here</p>
                                    </div>
                                    <img id="output-image" src="" alt="Generated Image"
                                         class="image-preview-image hidden" />
-                                   <div class="image-actions-overlay">
-                                        <a id="download-btn" class="image-action-btn" download
-                                             title="Download Image"><span
-                                                  class="material-symbols-outlined">download</span></a>
-                                        <a id="open-new-tab-btn" class="image-action-btn" target="_blank"
+                                   <div class="image-actions-overlay"><a id="download-btn" class="image-action-btn"
+                                             download title="Download Image"><span
+                                                  class="material-symbols-outlined">download</span></a><a
+                                             id="open-new-tab-btn" class="image-action-btn" target="_blank"
                                              title="Open in New Tab"><span
-                                                  class="material-symbols-outlined">open_in_new</span></a>
-                                   </div>
+                                                  class="material-symbols-outlined">open_in_new</span></a></div>
                               </div>
                               <div id="progress-container" class="progress-container hidden">
                                    <div class="flex-between">
@@ -185,9 +158,8 @@
                               </div>
                               <p id="info-text" class="info-text-area"></p>
                          </div>
-                         <button id="generate-btn" class="btn-generate-art">
-                              <span class="material-symbols-outlined">auto_fix_high</span> Generate Art
-                         </button>
+                         <button id="generate-btn" class="btn-generate-art"><span
+                                   class="material-symbols-outlined">auto_fix_high</span> Generate Art</button>
                     </div>
                </div>
           </div>
@@ -195,20 +167,19 @@
           <!-- Gallery Page Content -->
           <div id="page-gallery" class="page-content hidden">
                <div class="gallery-header">
-                    <h1 class="gallery-title">Your Generations</h1>
-                    <button id="refresh-gallery-btn" class="btn btn-secondary">
-                         <span class="material-symbols-outlined">refresh</span> Refresh Gallery
-                    </button>
+                    <h1 class="gallery-title">Your Generations</h1><button id="refresh-gallery-btn"
+                         class="btn btn-secondary"><span class="material-symbols-outlined">refresh</span> Refresh
+                         Gallery</button>
                </div>
                <div id="gallery-grid" class="gallery-grid"></div>
-               <div id="gallery-placeholder" class="gallery-placeholder hidden">
-                    <span class="material-symbols-outlined">image_search</span>
+               <div id="gallery-placeholder" class="gallery-placeholder hidden"><span
+                         class="material-symbols-outlined">image_search</span>
                     <p>No images found. Go generate something amazing!</p>
                </div>
           </div>
      </main>
 
-     <!-- Custom Image Viewer Lightbox -->
+     <!-- Lightbox -->
      <div id="lightbox" class="lightbox hidden">
           <span id="lightbox-close" class="lightbox-close">&times;</span>
           <img class="lightbox-content" id="lightbox-img">
