@@ -44,28 +44,51 @@ body {
 }
 
 ::-webkit-scrollbar {
-     width: 8px;
-     height: 8px;
+     width: 6px;
+     height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-     background: var(--light-gray);
+     background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-     background: var(--dark-gray);
-     border-radius: 4px;
+     background: var(--teal-500);
+     border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-     background: var(--slate-700);
+     background: var(--teal-700);
+}
+
+/* --- Transitions & Animations --- */
+.page-content {
+     animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+     from {
+          opacity: 0;
+          transform: translateY(10px);
+     }
+
+     to {
+          opacity: 1;
+          transform: translateY(0);
+     }
 }
 
 /* --- Top Navigation Bar --- */
-.top-navbar {
+.top-navbar,
+.nav-left,
+.nav-right,
+.logo-brand,
+.nav-links {
      display: flex;
      align-items: center;
-     justify-content: space-between;
+}
+
+.top-navbar {
      height: var(--navbar-height);
      padding: 0 1.5rem;
      background-color: var(--white);
@@ -75,20 +98,17 @@ body {
      left: 0;
      right: 0;
      z-index: 100;
+     justify-content: space-between;
 }
 
 .nav-left,
-.nav-right,
 .logo-brand,
 .nav-links {
-     display: flex;
-     align-items: center;
      gap: 1.5rem;
 }
 
 .app-logo-icon {
      height: 32px;
-     color: var(--teal-500);
 }
 
 .app-title {
@@ -158,7 +178,6 @@ body {
 .page-content {
      max-width: 1600px;
      margin: 0 auto;
-     height: 100%;
 }
 
 .grid-container {
@@ -166,7 +185,7 @@ body {
      grid-template-columns: minmax(300px, 1.1fr) minmax(300px, 1.1fr) minmax(350px, 1.5fr);
      gap: 1rem;
      align-items: start;
-     height: calc(100% - 1rem);
+     height: calc(100vh - var(--navbar-height) - 2rem);
 }
 
 .control-column,
@@ -175,6 +194,7 @@ body {
      display: flex;
      flex-direction: column;
      gap: 1rem;
+     max-height: 100%;
 }
 
 .hidden {
@@ -190,13 +210,18 @@ body {
      border: 1px solid var(--medium-gray);
      display: flex;
      flex-direction: column;
+     transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.content-card:hover {
+     transform: translateY(-2px);
+     box-shadow: var(--shadow-md);
 }
 
 .control-column .content-card:last-of-type {
      flex-grow: 1;
 }
 
-/* Makes prompt card fill space */
 .card-title {
      font-family: 'Silkscreen', cursive;
      font-size: 1rem;
@@ -217,6 +242,7 @@ body {
      display: flex;
      align-items: center;
      gap: 0.75rem;
+     padding: 0.75rem;
      background-color: var(--light-gray);
      border-radius: 0.5rem;
      margin-bottom: 1rem;
@@ -252,7 +278,6 @@ body {
 }
 
 .control-group label {
-     display: block;
      font-weight: 600;
      color: var(--slate-700);
      margin-bottom: 0.5rem;
@@ -265,8 +290,7 @@ body {
      align-items: center;
 }
 
-.form-input,
-.form-textarea {
+.form-input {
      width: 100%;
      height: 2.5rem;
      padding: 0 0.75rem;
@@ -280,21 +304,101 @@ body {
      color: var(--slate-800);
 }
 
+.form-input:focus {
+     box-shadow: 0 0 0 2px var(--white), 0 0 0 4px var(--teal-500);
+     border-color: var(--teal-500);
+}
+
+/* Custom Textarea */
 .form-textarea {
+     width: 100%;
      height: auto;
      min-height: 5rem;
      resize: vertical;
      padding: 0.5rem 0.75rem;
      flex-grow: 1;
+     background-color: var(--light-gray);
+     border: 1px solid var(--medium-gray);
+     border-radius: 0.5rem;
+     outline: none;
+     transition: all 150ms ease;
+     font-family: inherit;
+     font-size: 0.9rem;
+     color: var(--slate-800);
+     background-image: linear-gradient(rgba(0, 0, 0, 0.02) 50%, transparent 50%);
+     background-size: 100% 3em;
 }
 
-.form-input:focus,
 .form-textarea:focus {
      box-shadow: 0 0 0 2px var(--white), 0 0 0 4px var(--teal-500);
      border-color: var(--teal-500);
 }
 
-/* --- Custom Dropdown --- */
+/* --- Custom Checkbox --- */
+.checkbox-group {
+     margin-bottom: 0.75rem;
+}
+
+.checkbox-label {
+     display: flex;
+     align-items: center;
+     cursor: pointer;
+     user-select: none;
+     gap: 0.5rem;
+}
+
+.checkbox-label input {
+     position: absolute;
+     opacity: 0;
+     height: 0;
+     width: 0;
+}
+
+.checkbox-label span {
+     font-size: 0.875rem;
+     font-weight: 500;
+     color: var(--slate-700);
+}
+
+.checkbox-label::before {
+     content: '';
+     display: inline-block;
+     width: 18px;
+     height: 18px;
+     border: 2px solid var(--medium-gray);
+     border-radius: 4px;
+     background-color: var(--light-gray);
+     transition: all 0.2s ease;
+}
+
+.checkbox-label input:checked+span::before {
+     background-color: var(--teal-500);
+     border-color: var(--teal-500);
+}
+
+.checkbox-label::after {
+     content: 'done';
+     font-family: 'Material Symbols Outlined';
+     font-size: 14px;
+     color: white;
+     position: absolute;
+     left: 2px;
+     top: 2px;
+     transform: scale(0);
+     transition: transform 0.2s ease;
+}
+
+.checkbox-label input:checked~span::after {
+     transform: scale(1);
+}
+
+.checkbox-helper {
+     font-size: 0.75rem;
+     color: var(--dark-gray);
+     margin: 0.25rem 0 0 26px;
+}
+
+/* Custom Dropdown (same as before, it's already good) */
 .custom-dropdown {
      position: relative;
      width: 100%;
@@ -365,6 +469,7 @@ body {
      border-radius: 0.375rem;
      cursor: pointer;
      font-weight: 500;
+     transition: all 0.1s ease;
 }
 
 .dropdown-option:hover,
@@ -395,6 +500,14 @@ body {
      font-size: 0.875rem;
 }
 
+.btn:hover:not(:disabled) {
+     transform: translateY(-2px);
+}
+
+.btn:active:not(:disabled) {
+     transform: translateY(-1px);
+}
+
 .btn:disabled {
      opacity: 0.5;
      cursor: not-allowed;
@@ -403,10 +516,12 @@ body {
 .btn-primary {
      background-color: var(--teal-500);
      color: var(--white);
+     box-shadow: 0 2px 5px rgba(20, 184, 166, 0.2);
 }
 
 .btn-primary:hover:not(:disabled) {
      background-color: var(--teal-700);
+     box-shadow: 0 4px 10px rgba(20, 184, 166, 0.3);
 }
 
 .btn-secondary {
@@ -417,6 +532,7 @@ body {
 
 .btn-secondary:hover:not(:disabled) {
      background-color: #d1d5db;
+     border-color: #cbd5e1;
 }
 
 .btn-icon {
@@ -482,6 +598,7 @@ body {
      cursor: pointer;
      background-image: linear-gradient(var(--teal-500), var(--teal-500));
      background-repeat: no-repeat;
+     transition: all 0.2s ease;
 }
 
 .range-input::-webkit-slider-thumb {
@@ -509,24 +626,7 @@ body {
 
 .range-input:active::-webkit-slider-thumb {
      transform: scale(1.3);
-}
-
-/* --- Checkboxes --- */
-.checkbox-label {
-     display: flex;
-     align-items: center;
-     gap: 0.5rem;
-     cursor: pointer;
-     font-size: 0.875rem;
-     font-weight: 500;
-}
-
-.form-checkbox {
-     height: 1.15rem;
-     width: 1.15rem;
-     border-radius: 0.25rem;
-     border: 2px solid var(--medium-gray);
-     accent-color: var(--teal-700);
+     box-shadow: 0 0 0 5px rgba(20, 184, 166, 0.2);
 }
 
 /* --- Image Preview & Progress --- */
@@ -628,6 +728,17 @@ body {
 
 .progress-bar-bg {
      height: 6px;
+     background-color: var(--medium-gray);
+     border-radius: 3px;
+     overflow: hidden;
+     margin-top: 0.25rem;
+}
+
+.progress-bar-fill {
+     height: 100%;
+     background-color: var(--teal-500);
+     transition: width 0.2s ease-out;
+     border-radius: 3px;
 }
 
 .info-text-area {
@@ -730,10 +841,12 @@ body {
      justify-content: center;
      opacity: 0;
      transition: opacity 0.3s ease;
+     pointer-events: none;
 }
 
 .lightbox:not(.hidden) {
      opacity: 1;
+     pointer-events: auto;
 }
 
 .lightbox-content {
@@ -809,6 +922,7 @@ body {
      .generation-column {
           grid-column: auto;
           grid-row: auto;
+          max-height: none;
      }
 }
 
