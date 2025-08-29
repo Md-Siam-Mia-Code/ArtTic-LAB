@@ -9,15 +9,17 @@
      <link rel="icon" href="/static/assets/logo.svg" type="image/svg+xml">
      <link href="https://fonts.googleapis.com" rel="preconnect" />
      <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
-     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
-          rel="stylesheet" />
+     <!-- New Fonts: Poppins for body, Silkscreen for titles -->
+     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Silkscreen:wght@400;700&display=swap"
+          rel="stylesheet">
      <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
      <!-- Main Stylesheet -->
      <link href="/static/css/style.css" rel="stylesheet" />
 </head>
 
 <body>
-     <div class="app-container">
+     <!-- Main container for sidebar state management -->
+     <div id="app-container" class="app-container">
           <!-- Sidebar Navigation -->
           <aside class="sidebar-wrapper">
                <div class="sidebar-header">
@@ -25,27 +27,35 @@
                     <h1 class="app-title">ArtTic-LAB</h1>
                </div>
                <nav class="sidebar-nav">
-                    <a class="sidebar-link active" href="#" data-target="generate">
-                         <span class="material-symbols-outlined">auto_awesome</span> Generate
+                    <a class="sidebar-link active" href="#" data-target="generate" title="Generate">
+                         <span class="material-symbols-outlined">auto_awesome</span> <span
+                              class="link-text">Generate</span>
                     </a>
-                    <a class="sidebar-link" href="#" data-target="gallery">
-                         <span class="material-symbols-outlined">photo_library</span> Gallery
+                    <a class="sidebar-link" href="#" data-target="gallery" title="Gallery">
+                         <span class="material-symbols-outlined">photo_library</span> <span
+                              class="link-text">Gallery</span>
                     </a>
                </nav>
                <div class="sidebar-footer">
-                    <p>ArtTic-LAB v1.5.0</p>
-                    <p class="status-indicator-text" id="connection-status">Connecting...</p>
+                    <button id="sidebar-toggle-btn" class="sidebar-toggle" title="Toggle Sidebar">
+                         <span class="material-symbols-outlined">menu_open</span>
+                    </button>
+                    <div class="status-indicator">
+                         <p class="status-text" id="connection-status">Connecting...</p>
+                    </div>
                </div>
           </aside>
 
           <!-- Main Content Area -->
           <main id="app-content" class="main-content">
-               <!-- Generate Page Content (Visible by default) -->
+               <!-- Generate Page Content -->
                <div id="page-generate" class="page-content">
                     <div class="grid-container">
-                         <!-- Left Column: Controls -->
+                         <!-- Left Column: Controls (Reorganized into logical cards) -->
                          <div class="control-column">
-                              <div class="content-section">
+                              <!-- Model Setup Card -->
+                              <div class="content-card">
+                                   <h2 class="card-title">Model Setup</h2>
                                    <div class="info-card">
                                         <div class="info-card-text">
                                              <p>Model Status</p>
@@ -56,29 +66,24 @@
                                         </div>
                                    </div>
                                    <div class="control-group">
-                                        <label for="model-select">Model</label>
-                                        <div class="flex-gap-2">
-                                             <select id="model-select" class="form-select flex-grow">
-                                                  <option>Loading models...</option>
-                                             </select>
-                                             <button id="refresh-models-btn" class="btn btn-icon"
-                                                  title="Refresh Models">
-                                                  <span class="material-symbols-outlined">refresh</span>
-                                             </button>
-                                        </div>
+                                        <label for="model-dropdown">Model</label>
+                                        <div id="model-dropdown" class="custom-dropdown"></div>
+                                   </div>
+                                   <div class="control-group">
+                                        <label for="sampler-dropdown">Sampler</label>
+                                        <div id="sampler-dropdown" class="custom-dropdown"></div>
                                    </div>
                                    <div class="grid-col-2">
-                                        <button id="load-model-btn" class="btn btn-primary">
-                                             <span class="material-symbols-outlined">hub</span> Load Model
-                                        </button>
-                                        <button id="unload-model-btn" class="btn btn-secondary">
-                                             <span class="material-symbols-outlined">cancel</span> Unload
-                                        </button>
+                                        <button id="load-model-btn" class="btn btn-primary"><span
+                                                  class="material-symbols-outlined">hub</span> Load Model</button>
+                                        <button id="unload-model-btn" class="btn btn-secondary"><span
+                                                  class="material-symbols-outlined">cancel</span> Unload</button>
                                    </div>
                               </div>
 
-                              <div class="content-section">
-                                   <h2 class="section-title">Generation Settings</h2>
+                              <!-- Prompting Card -->
+                              <div class="content-card">
+                                   <h2 class="card-title">Creative Prompting</h2>
                                    <div class="control-group">
                                         <label for="prompt">Prompt</label>
                                         <textarea id="prompt" class="form-textarea"
@@ -89,52 +94,63 @@
                                         <textarea id="negative-prompt" class="form-textarea"
                                              placeholder="ugly, deformed, blurry... (optional for SD3)"></textarea>
                                    </div>
+                              </div>
+                         </div>
+
+                         <!-- Middle Column: Generation Parameters -->
+                         <div class="parameters-column">
+                              <!-- Parameters Card -->
+                              <div class="content-card">
+                                   <h2 class="card-title">Generation Parameters</h2>
+                                   <div class="control-group">
+                                        <div class="flex-between">
+                                             <label for="steps-slider">Steps</label>
+                                             <span class="slider-value" id="steps-value">28</span>
+                                        </div>
+                                        <input type="range" id="steps-slider" class="range-input" min="1" max="100"
+                                             value="28" step="1">
+                                   </div>
+                                   <div class="control-group">
+                                        <div class="flex-between">
+                                             <label for="guidance-slider">Guidance (CFG)</label>
+                                             <span class="slider-value" id="guidance-value">7.0</span>
+                                        </div>
+                                        <input type="range" id="guidance-slider" class="range-input" min="1" max="20"
+                                             value="7.0" step="0.1">
+                                   </div>
+                                   <div class="control-group">
+                                        <label for="seed-input">Seed</label>
+                                        <div class="input-with-button">
+                                             <input type="number" id="seed-input" value="12345" class="form-input">
+                                             <button id="randomize-seed-btn" class="btn btn-icon"
+                                                  title="Randomize Seed"><span
+                                                       class="material-symbols-outlined">casino</span></button>
+                                        </div>
+                                   </div>
                                    <details class="advanced-options-details">
-                                        <summary class="advanced-options-summary">
-                                             Advanced Options <span class="material-symbols-outlined">expand_more</span>
-                                        </summary>
+                                        <summary class="advanced-options-summary">Advanced Options <span
+                                                  class="material-symbols-outlined">expand_more</span></summary>
                                         <div class="advanced-options-content">
                                              <div class="control-group">
-                                                  <label for="sampler-select"
-                                                       class="advanced-options-label-block">Sampler</label>
-                                                  <select id="sampler-select" class="form-select"></select>
-                                             </div>
-                                             <div class="control-group">
-                                                  <label for="seed-input"
-                                                       class="advanced-options-label-block">Seed</label>
-                                                  <div class="flex-gap-2">
-                                                       <input type="number" id="seed-input" value="12345"
-                                                            class="form-input form-input-seed">
-                                                       <button id="randomize-seed-btn"
-                                                            class="btn btn-icon btn-seed-random" title="Randomize Seed">
-                                                            <span class="material-symbols-outlined">casino</span>
-                                                       </button>
-                                                  </div>
-                                             </div>
-                                             <div class="control-group col-span-2">
-                                                  <div class="flex justify-between items-center mb-2">
-                                                       <label for="width-slider"
-                                                            class="advanced-options-label">Width</label>
-                                                       <span class="advanced-options-label-value"
-                                                            id="width-value">512px</span>
+                                                  <div class="flex-between">
+                                                       <label for="width-slider">Width</label>
+                                                       <span class="slider-value" id="width-value">512px</span>
                                                   </div>
                                                   <input type="range" id="width-slider" class="range-input" min="256"
                                                        max="2048" value="512" step="64">
                                              </div>
-                                             <div class="control-group col-span-2">
-                                                  <div class="flex justify-between items-center mb-2">
-                                                       <label for="height-slider"
-                                                            class="advanced-options-label">Height</label>
-                                                       <span class="advanced-options-label-value"
-                                                            id="height-value">512px</span>
+                                             <div class="control-group">
+                                                  <div class="flex-between">
+                                                       <label for="height-slider">Height</label>
+                                                       <span class="slider-value" id="height-value">512px</span>
                                                   </div>
                                                   <input type="range" id="height-slider" class="range-input" min="256"
                                                        max="2048" value="512" step="64">
                                              </div>
-                                             <div class="control-group col-span-2">
-                                                  <label class="advanced-options-label-block">Aspect Ratios</label>
+                                             <div class="control-group">
+                                                  <label>Aspect Ratios</label>
                                                   <div class="grid-col-4" id="aspect-ratio-btns">
-                                                       <button class="btn btn-aspect-ratio"
+                                                       <button class="btn btn-aspect-ratio active"
                                                             data-ratio="1:1">1:1</button>
                                                        <button class="btn btn-aspect-ratio"
                                                             data-ratio="4:3">4:3</button>
@@ -144,55 +160,34 @@
                                                             data-ratio="16:9">16:9</button>
                                                   </div>
                                              </div>
-                                             <div class="control-group col-span-2 flex-gap-6">
-                                                  <label class="flex items-center gap-2 cursor-pointer">
-                                                       <input type="checkbox" id="vae-tiling-checkbox"
-                                                            class="form-checkbox" checked> VAE Tiling
-                                                  </label>
-                                                  <label class="flex items-center gap-2 cursor-pointer">
-                                                       <input type="checkbox" id="cpu-offload-checkbox"
-                                                            class="form-checkbox"> CPU Offload
-                                                  </label>
+                                             <div class="control-group grid-col-2">
+                                                  <label class="checkbox-label"><input type="checkbox"
+                                                            id="vae-tiling-checkbox" class="form-checkbox" checked> VAE
+                                                       Tiling</label>
+                                                  <label class="checkbox-label"><input type="checkbox"
+                                                            id="cpu-offload-checkbox" class="form-checkbox"> CPU
+                                                       Offload</label>
                                              </div>
                                         </div>
                                    </details>
                               </div>
                          </div>
-                         <!-- Right Column: Image and Generation -->
+
+                         <!-- Right Column: Image and Action -->
                          <div class="generation-column">
-                              <div class="content-section">
-                                   <div class="control-group">
-                                        <div class="flex justify-between items-center mb-2">
-                                             <label for="steps-slider">Steps</label>
-                                             <span class="font-bold text-[var(--ocean-blue-700)]"
-                                                  id="steps-value">28</span>
-                                        </div>
-                                        <input type="range" id="steps-slider" class="range-input" min="1" max="100"
-                                             value="28" step="1">
-                                   </div>
-                                   <div class="control-group">
-                                        <div class="flex justify-between items-center mb-2">
-                                             <label for="guidance-slider">Guidance (CFG)</label>
-                                             <span class="font-bold text-[var(--ocean-blue-700)]"
-                                                  id="guidance-value">7.0</span>
-                                        </div>
-                                        <input type="range" id="guidance-slider" class="range-input" min="1" max="20"
-                                             value="7.0" step="0.1">
-                                   </div>
-                              </div>
-                              <div class="image-preview-section">
+                              <div class="image-preview-area">
                                    <div class="image-preview-wrapper">
                                         <div id="image-placeholder" class="image-placeholder">
                                              <span class="material-symbols-outlined">wallpaper</span>
-                                             <p>Your generation will appear here</p>
+                                             <p>Your creation appears here</p>
                                         </div>
                                         <img id="output-image" src="" alt="Generated Image"
                                              class="image-preview-image hidden" />
                                    </div>
                                    <div id="progress-container" class="progress-container hidden">
-                                        <div class="flex justify-between">
+                                        <div class="flex-between">
                                              <p id="progress-label" class="progress-label">Loading Model...</p>
-                                             <p class="progress-label-status" id="progress-percent">0%</p>
+                                             <p class="progress-percent" id="progress-percent">0%</p>
                                         </div>
                                         <div class="progress-bar-bg">
                                              <div id="progress-bar-fill" class="progress-bar-fill" style="width: 0%;">
@@ -208,7 +203,7 @@
                     </div>
                </div>
 
-               <!-- Gallery Page Content (Hidden by default) -->
+               <!-- Gallery Page Content -->
                <div id="page-gallery" class="page-content hidden">
                     <div class="gallery-header">
                          <h1 class="gallery-title">Your Generations</h1>
@@ -216,15 +211,20 @@
                               <span class="material-symbols-outlined">refresh</span> Refresh Gallery
                          </button>
                     </div>
-                    <div id="gallery-grid" class="gallery-grid">
-                         <!-- Gallery items will be injected here by JavaScript -->
-                    </div>
+                    <div id="gallery-grid" class="gallery-grid"></div>
                     <div id="gallery-placeholder" class="gallery-placeholder hidden">
                          <span class="material-symbols-outlined">image_search</span>
                          <p>No images found. Go generate something amazing!</p>
                     </div>
                </div>
           </main>
+     </div>
+
+     <!-- Custom Image Viewer Lightbox -->
+     <div id="lightbox" class="lightbox hidden">
+          <span id="lightbox-close" class="lightbox-close">&times;</span>
+          <img class="lightbox-content" id="lightbox-img">
+          <div id="lightbox-caption" class="lightbox-caption"></div>
      </div>
 
      <!-- Main JavaScript -->
