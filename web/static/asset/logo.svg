@@ -1,11 +1,69 @@
-<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-<defs>
-<linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-  <stop offset="0%" style="stop-color:#00BCD4;stop-opacity:1" />
-  <stop offset="100%" style="stop-color:#0097A7;stop-opacity:1" />
-</linearGradient>
-</defs>
-<path d="M24 4L4 24L24 44L44 24L24 4Z" fill="url(#grad1)" fill-opacity="0.2"/>
-<path d="M24 10L10 24L24 38L38 24L24 10Z" stroke="url(#grad1)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M29.6569 18.3431C31.219 19.9052 32 21.9478 32 24C32 28.4183 28.4183 32 24 32C19.5817 32 16 28.4183 16 24C16 21.9478 16.781 19.9052 18.3431 18.3431" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="512" height="512">
+  <defs>
+    <!-- Gradient definitions re-themed to Teal/Cyan -->
+    <linearGradient id="primaryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0d9488;stop-opacity:1" /> <!-- Teal-700 -->
+      <stop offset="50%" style="stop-color:#14b8a6;stop-opacity:1" /> <!-- Teal-500 -->
+      <stop offset="100%" style="stop-color:#99f6e4;stop-opacity:1" /> <!-- Teal-200 -->
+    </linearGradient>
+    
+    <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#06b6d4;stop-opacity:1" /> <!-- Cyan-500 -->
+      <stop offset="100%" style="stop-color:#67e8f9;stop-opacity:1" /> <!-- Cyan-300 -->
+    </linearGradient>
+    
+    <linearGradient id="glowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0d9488;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#14b8a6;stop-opacity:0.1" />
+    </linearGradient>
+    
+    <!-- Filters are unchanged -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <filter id="innerShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feOffset dx="0" dy="2"/>
+      <feGaussianBlur stdDeviation="2" result="offset-blur"/>
+      <feFlood flood-color="#000000" flood-opacity="0.2"/>
+      <feComposite in2="offset-blur" operator="in"/>
+      <feMerge> 
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <circle cx="60" cy="60" r="55" fill="url(#glowGradient)" opacity="0.2"/>
+  <circle cx="60" cy="60" r="45" fill="url(#primaryGradient)" filter="url(#innerShadow)"/>
+  
+  <g transform="translate(60, 60)" filter="url(#glow)">
+    <circle cx="0" cy="0" r="8" fill="#ffffff" opacity="0.9"/>
+    <g stroke="#ffffff" stroke-width="2" opacity="0.7" fill="none"></g>
+    <g transform="rotate(45)">
+      <path d="M 0,-25 A 25,25 0 0,1 17.7,-17.7" stroke="url(#accentGradient)" stroke-width="3" fill="none" opacity="0.8"/>
+      <path d="M 17.7,-17.7 A 25,25 0 0,1 25,0" stroke="#ffffff" stroke-width="3" fill="none" opacity="0.6"/>
+      <path d="M 25,0 A 25,25 0 0,1 17.7,17.7" stroke="url(#accentGradient)" stroke-width="3" fill="none" opacity="0.8"/>
+      <path d="M 17.7,17.7 A 25,25 0 0,1 0,25" stroke="#ffffff" stroke-width="3" fill="none" opacity="0.6"/>
+    </g>
+    <g opacity="0.8">
+      <path d="M -20,-15 Q -15,-20 -10,-15 Q -5,-10 0,-15" stroke="#ffffff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M -20,15 Q -15,20 -10,15 Q -5,10 0,15" stroke="url(#accentGradient)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M 0,25 Q 5,30 10,25 Q 15,20 20,25" stroke="#ffffff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    </g>
+    <g fill="#ffffff" opacity="0.6">
+      <circle cx="-30" cy="-10" r="1.5"/><circle cx="30" cy="10" r="1.5"/><circle cx="-10" cy="30" r="1.5"/><circle cx="10" cy="-30" r="1.5"/>
+    </g>
+    <g stroke="url(#accentGradient)" stroke-width="1.5" fill="none" opacity="0.5">
+      <polygon points="-35,-5 -30,-10 -25,-5 -30,0"/><polygon points="35,5 30,10 25,5 30,0"/><polygon points="-5,35 -10,30 -5,25 0,30"/><polygon points="5,-35 10,-30 5,-25 0,-30"/>
+    </g>
+  </g>
+  
+  <circle cx="60" cy="60" r="52" fill="none" stroke="url(#primaryGradient)" stroke-width="1" opacity="0.3" stroke-dasharray="5,5">
+    <animateTransform attributeName="transform" attributeType="XML" type="rotate" from="0 60 60" to="360 60 60" dur="20s" repeatCount="indefinite"/>
+  </circle>
 </svg>
