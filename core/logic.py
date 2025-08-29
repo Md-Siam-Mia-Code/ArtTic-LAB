@@ -9,9 +9,9 @@ from diffusers import (
     EulerAncestralDiscreteScheduler,
     EulerDiscreteScheduler,
     LMSDiscreteScheduler,
-    DPMSolverMultistepScheduler,  # Corrected typo: Multistep
+    DPMSolverMultistepScheduler,
     DDIMScheduler,
-    UniPCMultistepScheduler,  # Corrected typo: Multistep
+    UniPCMultistepScheduler,
 )
 from pipelines import get_pipeline_for_model
 from pipelines.sdxl_pipeline import SDXLPipeline
@@ -33,9 +33,9 @@ APP_LOGGER_NAME = "arttic_lab"
 logger = logging.getLogger(APP_LOGGER_NAME)
 SCHEDULER_MAP = {
     "Euler A": EulerAncestralDiscreteScheduler,
-    "DPM++ 2M": DPMSolverMultistepScheduler,  # Corrected typo
+    "DPM++ 2M": DPMSolverMultistepScheduler,
     "DDIM": DDIMScheduler,
-    "UniPC": UniPCMultistepScheduler,  # Corrected typo
+    "UniPC": UniPCMultistepScheduler,
     "Euler": EulerDiscreteScheduler,
     "LMS": LMSDiscreteScheduler,
 }
@@ -115,10 +115,16 @@ def load_model(
         update_progress(0, f"Getting pipeline for {model_name}...")
 
         pipe = get_pipeline_for_model(model_name)
-        pipe.load_pipeline(lambda p, d: update_progress(p, d))
+
+        # *** FIX IS HERE ***
+        # The lambda now correctly accepts 'desc' as a keyword argument.
+        pipe.load_pipeline(lambda progress, desc: update_progress(progress, desc))
 
         pipe.place_on_device(use_cpu_offload=cpu_offload)
-        pipe.optimize_with_ipex(lambda p, d: update_progress(p, d))
+
+        # *** AND FIX IS HERE ***
+        # The same fix is applied to the optimize_with_ipex callback.
+        pipe.optimize_with_ipex(lambda progress, desc: update_progress(progress, desc))
 
         if not isinstance(pipe, SD3Pipeline):
             logger.info(f"Setting scheduler to: {scheduler_name}")
@@ -127,9 +133,11 @@ def load_model(
 
         # VAE Tiling/Slicing
         if vae_tiling:
+            logger.info("Enabling VAE Slicing & Tiling for memory efficiency.")
             pipe.pipe.enable_vae_slicing()
             pipe.pipe.enable_vae_tiling()
         else:
+            logger.info("Disabling VAE Slicing & Tiling.")
             pipe.pipe.disable_vae_slicing()
             pipe.pipe.disable_vae_tiling()
 
