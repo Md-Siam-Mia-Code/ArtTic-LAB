@@ -6,10 +6,9 @@
      <meta content="width=device-width, initial-scale=1.0" name="viewport" />
      <title>ArtTic-LAB</title>
      <!-- Favicon and Fonts -->
-     <link rel="icon" href="/static/assets/logo.svg" type="image/svg+xml">
+     <link rel="icon" href="../static/asset/logo.svg" type="image/svg+xml">
      <link href="https://fonts.googleapis.com" rel="preconnect" />
      <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
-     <!-- New Fonts: Poppins for body, Silkscreen for titles -->
      <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Silkscreen:wght@400;700&display=swap"
           rel="stylesheet">
      <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
@@ -18,207 +17,196 @@
 </head>
 
 <body>
-     <!-- Main container for sidebar state management -->
-     <div id="app-container" class="app-container">
-          <!-- Sidebar Navigation -->
-          <aside class="sidebar-wrapper">
-               <div class="sidebar-header">
-                    <img src="/static/assets/logo.svg" alt="ArtTic-LAB Logo" class="app-logo-icon" />
+     <!-- Top Navigation Bar -->
+     <header class="top-navbar">
+          <div class="nav-left">
+               <div class="logo-brand">
+                    <img src="../static/asset/logo.svg" alt="ArtTic-LAB Logo" class="app-logo-icon" />
                     <h1 class="app-title">ArtTic-LAB</h1>
                </div>
-               <nav class="sidebar-nav">
-                    <a class="sidebar-link active" href="#" data-target="generate" title="Generate">
-                         <span class="material-symbols-outlined">auto_awesome</span> <span
-                              class="link-text">Generate</span>
+               <nav class="nav-links">
+                    <a class="nav-link active" href="#" data-target="generate">
+                         <span class="material-symbols-outlined">auto_awesome</span> Generate
                     </a>
-                    <a class="sidebar-link" href="#" data-target="gallery" title="Gallery">
-                         <span class="material-symbols-outlined">photo_library</span> <span
-                              class="link-text">Gallery</span>
+                    <a class="nav-link" href="#" data-target="gallery">
+                         <span class="material-symbols-outlined">photo_library</span> Gallery
                     </a>
                </nav>
-               <div class="sidebar-footer">
-                    <button id="sidebar-toggle-btn" class="sidebar-toggle" title="Toggle Sidebar">
-                         <span class="material-symbols-outlined">menu_open</span>
-                    </button>
-                    <div class="status-indicator">
-                         <p class="status-text" id="connection-status">Connecting...</p>
-                    </div>
+          </div>
+          <div class="nav-right">
+               <div id="status-indicator" class="status-indicator connecting">
+                    <span id="connection-status">Connecting...</span>
                </div>
-          </aside>
+          </div>
+     </header>
 
-          <!-- Main Content Area -->
-          <main id="app-content" class="main-content">
-               <!-- Generate Page Content -->
-               <div id="page-generate" class="page-content">
-                    <div class="grid-container">
-                         <!-- Left Column: Controls (Reorganized into logical cards) -->
-                         <div class="control-column">
-                              <!-- Model Setup Card -->
-                              <div class="content-card">
-                                   <h2 class="card-title">Model Setup</h2>
-                                   <div class="info-card">
-                                        <div class="info-card-text">
-                                             <p>Model Status</p>
-                                             <span id="status-text" class="status-unloaded">No model loaded.</span>
-                                        </div>
-                                        <div class="info-card-icon-wrapper">
-                                             <span class="material-symbols-outlined">memory</span>
-                                        </div>
-                                   </div>
-                                   <div class="control-group">
-                                        <label for="model-dropdown">Model</label>
-                                        <div id="model-dropdown" class="custom-dropdown"></div>
-                                   </div>
-                                   <div class="control-group">
-                                        <label for="sampler-dropdown">Sampler</label>
-                                        <div id="sampler-dropdown" class="custom-dropdown"></div>
-                                   </div>
-                                   <div class="grid-col-2">
-                                        <button id="load-model-btn" class="btn btn-primary"><span
-                                                  class="material-symbols-outlined">hub</span> Load Model</button>
-                                        <button id="unload-model-btn" class="btn btn-secondary"><span
-                                                  class="material-symbols-outlined">cancel</span> Unload</button>
-                                   </div>
+     <!-- Main Content Area -->
+     <main class="main-content">
+          <!-- Generate Page Content -->
+          <div id="page-generate" class="page-content">
+               <div class="grid-container">
+                    <!-- Left Column: Model & Prompting -->
+                    <div class="control-column">
+                         <div class="content-card">
+                              <h2 class="card-title">Model & Sampler</h2>
+                              <div class="control-group">
+                                   <label for="model-dropdown">Model</label>
+                                   <div id="model-dropdown" class="custom-dropdown"></div>
                               </div>
-
-                              <!-- Prompting Card -->
-                              <div class="content-card">
-                                   <h2 class="card-title">Creative Prompting</h2>
-                                   <div class="control-group">
-                                        <label for="prompt">Prompt</label>
-                                        <textarea id="prompt" class="form-textarea"
-                                             placeholder="A cinematic photo of...">photo of a beautiful woman, 8k, ultra realistic, cinematic</textarea>
-                                   </div>
-                                   <div class="control-group">
-                                        <label for="negative-prompt">Negative Prompt</label>
-                                        <textarea id="negative-prompt" class="form-textarea"
-                                             placeholder="ugly, deformed, blurry... (optional for SD3)"></textarea>
-                                   </div>
+                              <div class="control-group">
+                                   <label for="sampler-dropdown">Sampler</label>
+                                   <div id="sampler-dropdown" class="custom-dropdown"></div>
+                              </div>
+                              <div class="compact-info-card" id="status-card">
+                                   <span class="material-symbols-outlined icon-unloaded">memory</span>
+                                   <p id="status-text">No model loaded.</p>
+                              </div>
+                              <div class="grid-col-2">
+                                   <button id="load-model-btn" class="btn btn-primary"><span
+                                             class="material-symbols-outlined">hub</span> Load</button>
+                                   <button id="unload-model-btn" class="btn btn-secondary"><span
+                                             class="material-symbols-outlined">cancel</span> Unload</button>
                               </div>
                          </div>
+                         <div class="content-card">
+                              <h2 class="card-title">Prompting</h2>
+                              <div class="control-group">
+                                   <label for="prompt">Prompt</label>
+                                   <textarea id="prompt" class="form-textarea"
+                                        placeholder="A cinematic photo of...">photo of a beautiful woman, 8k, ultra realistic, cinematic</textarea>
+                              </div>
+                              <div class="control-group">
+                                   <label for="negative-prompt">Negative Prompt</label>
+                                   <textarea id="negative-prompt" class="form-textarea"
+                                        placeholder="ugly, deformed, blurry..."></textarea>
+                              </div>
+                         </div>
+                    </div>
 
-                         <!-- Middle Column: Generation Parameters -->
-                         <div class="parameters-column">
-                              <!-- Parameters Card -->
-                              <div class="content-card">
-                                   <h2 class="card-title">Generation Parameters</h2>
-                                   <div class="control-group">
-                                        <div class="flex-between">
-                                             <label for="steps-slider">Steps</label>
-                                             <span class="slider-value" id="steps-value">28</span>
-                                        </div>
+                    <!-- Middle Column: Generation Parameters -->
+                    <div class="parameters-column">
+                         <div class="content-card">
+                              <h2 class="card-title">Parameters</h2>
+                              <div class="control-group">
+                                   <div class="flex-between">
+                                        <label for="steps-slider">Steps</label>
+                                        <span class="slider-value" id="steps-value">28</span>
+                                   </div>
+                                   <div class="slider-container">
                                         <input type="range" id="steps-slider" class="range-input" min="1" max="100"
                                              value="28" step="1">
                                    </div>
-                                   <div class="control-group">
-                                        <div class="flex-between">
-                                             <label for="guidance-slider">Guidance (CFG)</label>
-                                             <span class="slider-value" id="guidance-value">7.0</span>
-                                        </div>
+                              </div>
+                              <div class="control-group">
+                                   <div class="flex-between">
+                                        <label for="guidance-slider">Guidance (CFG)</label>
+                                        <span class="slider-value" id="guidance-value">7.0</span>
+                                   </div>
+                                   <div class="slider-container">
                                         <input type="range" id="guidance-slider" class="range-input" min="1" max="20"
                                              value="7.0" step="0.1">
                                    </div>
-                                   <div class="control-group">
-                                        <label for="seed-input">Seed</label>
-                                        <div class="input-with-button">
-                                             <input type="number" id="seed-input" value="12345" class="form-input">
-                                             <button id="randomize-seed-btn" class="btn btn-icon"
-                                                  title="Randomize Seed"><span
-                                                       class="material-symbols-outlined">casino</span></button>
-                                        </div>
-                                   </div>
-                                   <details class="advanced-options-details">
-                                        <summary class="advanced-options-summary">Advanced Options <span
-                                                  class="material-symbols-outlined">expand_more</span></summary>
-                                        <div class="advanced-options-content">
-                                             <div class="control-group">
-                                                  <div class="flex-between">
-                                                       <label for="width-slider">Width</label>
-                                                       <span class="slider-value" id="width-value">512px</span>
-                                                  </div>
-                                                  <input type="range" id="width-slider" class="range-input" min="256"
-                                                       max="2048" value="512" step="64">
-                                             </div>
-                                             <div class="control-group">
-                                                  <div class="flex-between">
-                                                       <label for="height-slider">Height</label>
-                                                       <span class="slider-value" id="height-value">512px</span>
-                                                  </div>
-                                                  <input type="range" id="height-slider" class="range-input" min="256"
-                                                       max="2048" value="512" step="64">
-                                             </div>
-                                             <div class="control-group">
-                                                  <label>Aspect Ratios</label>
-                                                  <div class="grid-col-4" id="aspect-ratio-btns">
-                                                       <button class="btn btn-aspect-ratio active"
-                                                            data-ratio="1:1">1:1</button>
-                                                       <button class="btn btn-aspect-ratio"
-                                                            data-ratio="4:3">4:3</button>
-                                                       <button class="btn btn-aspect-ratio"
-                                                            data-ratio="3:2">3:2</button>
-                                                       <button class="btn btn-aspect-ratio"
-                                                            data-ratio="16:9">16:9</button>
-                                                  </div>
-                                             </div>
-                                             <div class="control-group grid-col-2">
-                                                  <label class="checkbox-label"><input type="checkbox"
-                                                            id="vae-tiling-checkbox" class="form-checkbox" checked> VAE
-                                                       Tiling</label>
-                                                  <label class="checkbox-label"><input type="checkbox"
-                                                            id="cpu-offload-checkbox" class="form-checkbox"> CPU
-                                                       Offload</label>
-                                             </div>
-                                        </div>
-                                   </details>
                               </div>
-                         </div>
-
-                         <!-- Right Column: Image and Action -->
-                         <div class="generation-column">
-                              <div class="image-preview-area">
-                                   <div class="image-preview-wrapper">
-                                        <div id="image-placeholder" class="image-placeholder">
-                                             <span class="material-symbols-outlined">wallpaper</span>
-                                             <p>Your creation appears here</p>
-                                        </div>
-                                        <img id="output-image" src="" alt="Generated Image"
-                                             class="image-preview-image hidden" />
+                              <div class="control-group">
+                                   <label for="seed-input">Seed</label>
+                                   <div class="input-with-button">
+                                        <input type="number" id="seed-input" value="12345" class="form-input">
+                                        <button id="randomize-seed-btn" class="btn btn-icon"
+                                             title="Randomize Seed"><span
+                                                  class="material-symbols-outlined">casino</span></button>
                                    </div>
-                                   <div id="progress-container" class="progress-container hidden">
-                                        <div class="flex-between">
-                                             <p id="progress-label" class="progress-label">Loading Model...</p>
-                                             <p class="progress-percent" id="progress-percent">0%</p>
-                                        </div>
-                                        <div class="progress-bar-bg">
-                                             <div id="progress-bar-fill" class="progress-bar-fill" style="width: 0%;">
-                                             </div>
-                                        </div>
-                                   </div>
-                                   <p id="info-text" class="info-text-area"></p>
                               </div>
-                              <button id="generate-btn" class="btn-generate-art">
-                                   <span class="material-symbols-outlined">auto_fix_high</span> Generate Art
-                              </button>
+                              <h2 class="card-title sub-title">Dimensions</h2>
+                              <div class="control-group">
+                                   <div class="flex-between">
+                                        <label for="width-slider">Width</label>
+                                        <span class="slider-value" id="width-value">512px</span>
+                                   </div>
+                                   <div class="slider-container">
+                                        <input type="range" id="width-slider" class="range-input" min="256" max="2048"
+                                             value="512" step="64">
+                                   </div>
+                              </div>
+                              <div class="control-group">
+                                   <div class="flex-between">
+                                        <label for="height-slider">Height</label>
+                                        <span class="slider-value" id="height-value">512px</span>
+                                   </div>
+                                   <div class="slider-container">
+                                        <input type="range" id="height-slider" class="range-input" min="256" max="2048"
+                                             value="512" step="64">
+                                   </div>
+                              </div>
+                              <div class="control-group">
+                                   <label>Aspect Ratios</label>
+                                   <div class="grid-col-4" id="aspect-ratio-btns">
+                                        <button class="btn btn-aspect-ratio active" data-ratio="1:1">1:1</button>
+                                        <button class="btn btn-aspect-ratio" data-ratio="4:3">4:3</button>
+                                        <button class="btn btn-aspect-ratio" data-ratio="3:2">3:2</button>
+                                        <button class="btn btn-aspect-ratio" data-ratio="16:9">16:9</button>
+                                   </div>
+                              </div>
+                              <div class="control-group grid-col-2">
+                                   <label class="checkbox-label"><input type="checkbox" id="vae-tiling-checkbox"
+                                             class="form-checkbox" checked> VAE Tiling</label>
+                                   <label class="checkbox-label"><input type="checkbox" id="cpu-offload-checkbox"
+                                             class="form-checkbox"> CPU Offload</label>
+                              </div>
                          </div>
                     </div>
-               </div>
 
-               <!-- Gallery Page Content -->
-               <div id="page-gallery" class="page-content hidden">
-                    <div class="gallery-header">
-                         <h1 class="gallery-title">Your Generations</h1>
-                         <button id="refresh-gallery-btn" class="btn btn-secondary">
-                              <span class="material-symbols-outlined">refresh</span> Refresh Gallery
+                    <!-- Right Column: Image and Action -->
+                    <div class="generation-column">
+                         <div class="image-preview-area">
+                              <div class="image-preview-wrapper">
+                                   <div id="image-placeholder" class="image-placeholder">
+                                        <span class="material-symbols-outlined">wallpaper</span>
+                                        <p>Your creation appears here</p>
+                                   </div>
+                                   <img id="output-image" src="" alt="Generated Image"
+                                        class="image-preview-image hidden" />
+                                   <div class="image-actions-overlay">
+                                        <a id="download-btn" class="image-action-btn" download
+                                             title="Download Image"><span
+                                                  class="material-symbols-outlined">download</span></a>
+                                        <a id="open-new-tab-btn" class="image-action-btn" target="_blank"
+                                             title="Open in New Tab"><span
+                                                  class="material-symbols-outlined">open_in_new</span></a>
+                                   </div>
+                              </div>
+                              <div id="progress-container" class="progress-container hidden">
+                                   <div class="flex-between">
+                                        <p id="progress-label" class="progress-label">Loading Model...</p>
+                                        <p id="progress-percent" class="progress-percent">0%</p>
+                                   </div>
+                                   <div class="progress-bar-bg">
+                                        <div id="progress-bar-fill" class="progress-bar-fill" style="width: 0%;"></div>
+                                   </div>
+                              </div>
+                              <p id="info-text" class="info-text-area"></p>
+                         </div>
+                         <button id="generate-btn" class="btn-generate-art">
+                              <span class="material-symbols-outlined">auto_fix_high</span> Generate Art
                          </button>
                     </div>
-                    <div id="gallery-grid" class="gallery-grid"></div>
-                    <div id="gallery-placeholder" class="gallery-placeholder hidden">
-                         <span class="material-symbols-outlined">image_search</span>
-                         <p>No images found. Go generate something amazing!</p>
-                    </div>
                </div>
-          </main>
-     </div>
+          </div>
+
+          <!-- Gallery Page Content -->
+          <div id="page-gallery" class="page-content hidden">
+               <div class="gallery-header">
+                    <h1 class="gallery-title">Your Generations</h1>
+                    <button id="refresh-gallery-btn" class="btn btn-secondary">
+                         <span class="material-symbols-outlined">refresh</span> Refresh Gallery
+                    </button>
+               </div>
+               <div id="gallery-grid" class="gallery-grid"></div>
+               <div id="gallery-placeholder" class="gallery-placeholder hidden">
+                    <span class="material-symbols-outlined">image_search</span>
+                    <p>No images found. Go generate something amazing!</p>
+               </div>
+          </div>
+     </main>
 
      <!-- Custom Image Viewer Lightbox -->
      <div id="lightbox" class="lightbox hidden">
@@ -226,9 +214,7 @@
           <img class="lightbox-content" id="lightbox-img">
           <div id="lightbox-caption" class="lightbox-caption"></div>
      </div>
-
-     <!-- Main JavaScript -->
-     <script src="/static/js/main.js"></script>
 </body>
+<script src="/static/js/main.js"></script>
 
 </html>
