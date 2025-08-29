@@ -8,7 +8,7 @@ ASPECT_RATIOS_SDXL_SD3 = {"1:1": (1024, 1024), "4:3": (1152, 896), "3:2": (1216,
 def create_ui(available_models, schedulers_list, handlers):
     with gr.Blocks(theme=gr.themes.Soft(), css="footer {display: none !important}") as app:
         gr.Markdown("# ArtTic-LAB")
-        gr.Markdown("ArtTic-LAB v1.5.0: The Power & Efficiency Update!")
+        gr.Markdown("ArtTic-LAB v2.0.0: The Power & Efficiency Update!")
 
         with gr.Tabs():
             with gr.TabItem("Generate"):
