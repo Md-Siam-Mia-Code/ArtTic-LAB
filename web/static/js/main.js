@@ -8,7 +8,6 @@ document.addEventListener("DOMContentLoaded", () => {
     modelType: "SD 1.5",
     socket: null,
   };
-  const SIDEBAR_COLLAPSED_KEY = "sidebarCollapsed";
   const ASPECT_RATIOS = {
     "SD 1.5": {
       "1:1": [512, 512],
@@ -36,25 +35,25 @@ document.addEventListener("DOMContentLoaded", () => {
     },
   };
 
-  // --- DOM Element Cache ---
+  // --- DOM Element Cache (Complete) ---
   const ui = {
-    appContainer: document.getElementById("app-container"),
-    connectionStatus: document.getElementById("connection-status"),
-    sidebar: {
-      wrapper: document.querySelector(".sidebar-wrapper"),
-      toggleBtn: document.getElementById("sidebar-toggle-btn"),
-      links: document.querySelectorAll(".sidebar-link"),
-    },
+    nav: { links: document.querySelectorAll(".nav-link") },
     pages: {
       generate: document.getElementById("page-generate"),
       gallery: document.getElementById("page-gallery"),
+    },
+    status: {
+      indicator: document.getElementById("status-indicator"),
+      connectionText: document.getElementById("connection-status"),
+      card: document.getElementById("status-card"),
+      text: document.getElementById("status-text"),
+      icon: document.querySelector("#status-card .material-symbols-outlined"),
     },
     model: {
       dropdown: document.getElementById("model-dropdown"),
       samplerDropdown: document.getElementById("sampler-dropdown"),
       loadBtn: document.getElementById("load-model-btn"),
       unloadBtn: document.getElementById("unload-model-btn"),
-      statusText: document.getElementById("status-text"),
     },
     params: {
       prompt: document.getElementById("prompt"),
@@ -78,6 +77,8 @@ document.addEventListener("DOMContentLoaded", () => {
       outputImage: document.getElementById("output-image"),
       imagePlaceholder: document.getElementById("image-placeholder"),
       infoText: document.getElementById("info-text"),
+      downloadBtn: document.getElementById("download-btn"),
+      openNewTabBtn: document.getElementById("open-new-tab-btn"),
     },
     progress: {
       container: document.getElementById("progress-container"),
@@ -136,9 +137,10 @@ document.addEventListener("DOMContentLoaded", () => {
       setBusyState(false);
     },
     generation_complete: (data) => {
-      ui.generate.outputImage.src = `/outputs/${
-        data.image_filename
-      }?t=${Date.now()}`;
+      const imageUrl = `/outputs/${data.image_filename}?t=${Date.now()}`;
+      ui.generate.outputImage.src = imageUrl;
+      ui.generate.downloadBtn.href = imageUrl;
+      ui.generate.openNewTabBtn.href = imageUrl;
       ui.generate.outputImage.classList.remove("hidden");
       ui.generate.imagePlaceholder.classList.add("hidden");
       ui.generate.infoText.textContent = data.info;
@@ -173,16 +175,14 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- UI Update & Control Functions ---
   function setBusyState(isBusy) {
     state.isBusy = isBusy;
-    ui.appContainer.style.cursor = isBusy ? "wait" : "default";
+    document.body.style.cursor = isBusy ? "wait" : "default";
     if (!isBusy) showProgressBar(false);
-    // Disable all inputs/buttons during busy state
     document
       .querySelectorAll("button, input, textarea, .custom-dropdown")
       .forEach((el) => {
         el.classList.toggle("disabled", isBusy);
-        el.disabled = isBusy;
+        if (el.tagName !== "DIV") el.disabled = isBusy; // Don't disable divs
       });
-    // Re-enable based on logic after unlocking
     if (!isBusy) {
       ui.model.unloadBtn.disabled = !state.isModelLoaded;
       ui.generate.btn.disabled = !state.isModelLoaded;
@@ -190,38 +190,39 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function updateStatus(message, statusClass) {
-    ui.model.statusText.textContent = message;
-    ui.model.statusText.className = `status-${statusClass}`;
+    ui.status.text.textContent = message;
+    const iconName =
+      { ready: "memory", unloaded: "memory_off", busy: "hourglass_top" }[
+        statusClass
+      ] || "memory";
+    const className = `material-symbols-outlined icon-${statusClass}`;
+    ui.status.icon.textContent = iconName;
+    ui.status.icon.className = className;
   }
 
   function showProgressBar(show) {
     ui.progress.container.classList.toggle("hidden", !show);
   }
   function updateConnectionStatus(text, statusClass) {
-    const parent = ui.connectionStatus.parentElement;
-    ui.connectionStatus.textContent = text;
-    parent.className = "status-indicator"; // Reset class
-    parent.classList.add(statusClass);
+    ui.status.connectionText.textContent = text;
+    ui.status.indicator.className = `status-indicator ${statusClass}`;
   }
 
   function setDimensions(width, height) {
     ui.params.widthSlider.value = width;
-    ui.params.widthValue.textContent = `${width}px`;
     ui.params.heightSlider.value = height;
-    ui.params.heightValue.textContent = `${height}px`;
+    // Trigger input event to update UI
+    ui.params.widthSlider.dispatchEvent(new Event("input"));
+    ui.params.heightSlider.dispatchEvent(new Event("input"));
   }
 
   // --- Custom Components ---
   function createCustomDropdown(container, options, onSelect) {
-    container.innerHTML = `
-            <div class="dropdown-selected" tabindex="0">
-                <span class="selected-text">${options[0] || "No options"}</span>
-            </div>
-            <ul class="dropdown-options"></ul>
-        `;
+    container.innerHTML = `<div class="dropdown-selected" tabindex="0"><span class="selected-text">${
+      options[0] || "No options"
+    }</span></div><ul class="dropdown-options"></ul>`;
     const selected = container.querySelector(".selected-text");
     const optionsList = container.querySelector(".dropdown-options");
-
     options.forEach((option) => {
       const li = document.createElement("li");
       li.className = "dropdown-option";
@@ -229,17 +230,14 @@ document.addEventListener("DOMContentLoaded", () => {
       li.dataset.value = option;
       optionsList.appendChild(li);
     });
-
     container.dataset.value = options[0] || "";
     if (options[0]) optionsList.querySelector("li").classList.add("selected");
-
     container.addEventListener("click", (e) => {
       if (!container.classList.contains("disabled")) {
         e.stopPropagation();
         container.classList.toggle("open");
       }
     });
-
     optionsList.addEventListener("click", (e) => {
       if (e.target.tagName === "LI") {
         container.dataset.value = e.target.dataset.value;
@@ -261,10 +259,12 @@ document.addEventListener("DOMContentLoaded", () => {
       images.forEach((imageFile) => {
         const item = document.createElement("div");
         item.className = "gallery-item";
-        item.innerHTML = `<img src="/outputs/${imageFile}" alt="${imageFile}" class="gallery-item-image" loading="lazy">`;
-        item.addEventListener("click", () =>
-          openLightbox(`/outputs/${imageFile}`, imageFile)
-        );
+        const imageUrl = `/outputs/${imageFile}`;
+        item.innerHTML = `<img src="${imageUrl}" alt="${imageFile}" class="gallery-item-image" loading="lazy"><div class="image-actions-overlay"><a href="${imageUrl}" download class="image-action-btn" title="Download Image"><span class="material-symbols-outlined">download</span></a><a href="${imageUrl}" target="_blank" class="image-action-btn" title="Open in New Tab"><span class="material-symbols-outlined">open_in_new</span></a></div>`;
+        item
+          .querySelector(".image-actions-overlay")
+          .addEventListener("click", (e) => e.stopPropagation());
+        item.addEventListener("click", () => openLightbox(imageUrl, imageFile));
         ui.gallery.grid.appendChild(item);
       });
     }
@@ -276,34 +276,42 @@ document.addEventListener("DOMContentLoaded", () => {
     ui.lightbox.container.classList.remove("hidden");
   }
 
+  function updateSliderBackground(slider) {
+    const min = parseFloat(slider.min || 0);
+    const max = parseFloat(slider.max || 100);
+    const val = parseFloat(slider.value);
+    const percentage = ((val - min) * 100) / (max - min);
+    slider.style.backgroundSize = `${percentage}% 100%`;
+  }
+
   // --- Event Listeners Setup ---
   function setupEventListeners() {
-    // Sliders value displays
-    ["steps", "guidance", "width", "height"].forEach((id) => {
-      const slider = ui.params[`${id}Slider`],
-        valueDisplay = ui.params[`${id}Value`];
-      slider.addEventListener("input", () => {
-        const suffix = id === "width" || id === "height" ? "px" : "";
-        valueDisplay.textContent = slider.value + suffix;
-      });
+    document.querySelectorAll(".range-input").forEach((slider) => {
+      const valueDisplay = document.getElementById(`${slider.id}-value`);
+      const updateFunc = () => {
+        const suffix =
+          slider.id.includes("width") || slider.id.includes("height")
+            ? "px"
+            : "";
+        if (valueDisplay) valueDisplay.textContent = slider.value + suffix;
+        updateSliderBackground(slider);
+      };
+      slider.addEventListener("input", updateFunc);
+      updateFunc(); // Initial call
     });
 
-    // Sidebar and Navigation
-    ui.sidebar.toggleBtn.addEventListener("click", () => {
-      const isCollapsed = ui.appContainer.classList.toggle("sidebar-collapsed");
-      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, isCollapsed);
-    });
-    ui.sidebar.links.forEach((link) => {
+    ui.nav.links.forEach((link) => {
       link.addEventListener("click", (e) => {
         e.preventDefault();
-        ui.sidebar.links.forEach((l) => l.classList.remove("active"));
+        ui.nav.links.forEach((l) => l.classList.remove("active"));
         link.classList.add("active");
         Object.values(ui.pages).forEach((page) => page.classList.add("hidden"));
-        ui.pages[link.dataset.target].classList.remove("hidden");
+        document
+          .getElementById(`page-${link.dataset.target}`)
+          .classList.remove("hidden");
       });
     });
 
-    // Model Actions
     ui.model.loadBtn.addEventListener("click", () => {
       setBusyState(true);
       updateStatus("Loading model...", "busy");
@@ -314,13 +322,13 @@ document.addEventListener("DOMContentLoaded", () => {
         cpu_offload: ui.params.cpuOffloadCheckbox.checked,
       });
     });
+
     ui.model.unloadBtn.addEventListener("click", () => {
       setBusyState(true);
       updateStatus("Unloading model...", "busy");
       sendMessage("unload_model");
     });
 
-    // Generation Actions
     ui.generate.btn.addEventListener("click", () => {
       setBusyState(true);
       ui.generate.infoText.textContent = "";
@@ -334,9 +342,11 @@ document.addEventListener("DOMContentLoaded", () => {
         height: parseInt(ui.params.heightSlider.value),
       });
     });
+
     ui.params.randomizeSeedBtn.addEventListener("click", () => {
       ui.params.seedInput.value = Math.floor(Math.random() * 2 ** 32);
     });
+
     ui.params.aspectRatioBtns.addEventListener("click", (e) => {
       const btn = e.target.closest(".btn-aspect-ratio");
       if (btn && !state.isBusy) {
@@ -353,8 +363,12 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    // Gallery & Lightbox
-    ui.gallery.refreshBtn.addEventListener("click", init);
+    ui.gallery.refreshBtn.addEventListener("click", () =>
+      fetch("/api/config")
+        .then((res) => res.json())
+        .then((config) => populateGallery(config.gallery_images))
+    );
+
     ui.lightbox.closeBtn.addEventListener("click", () =>
       ui.lightbox.container.classList.add("hidden")
     );
@@ -366,21 +380,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- Initialization ---
   async function init() {
-    // Set sidebar state from localStorage
-    if (localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true") {
-      ui.appContainer.classList.add("sidebar-collapsed");
-    }
-
     try {
       const response = await fetch("/api/config");
       if (!response.ok)
         throw new Error(`HTTP error! status: ${response.status}`);
       const config = await response.json();
-
       createCustomDropdown(ui.model.dropdown, config.models);
       createCustomDropdown(ui.model.samplerDropdown, config.schedulers);
       populateGallery(config.gallery_images);
-
       setBusyState(false);
     } catch (error) {
       console.error("Failed to fetch initial config:", error);
@@ -388,11 +395,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Start application
   init();
   connectWebSocket();
   setupEventListeners();
-  // Close dropdowns if clicked outside
   document.addEventListener("click", () =>
     document
       .querySelectorAll(".custom-dropdown.open")
