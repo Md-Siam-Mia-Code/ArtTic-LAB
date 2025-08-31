@@ -17,6 +17,10 @@ from pipelines import get_pipeline_for_model
 from pipelines.sdxl_pipeline import SDXLPipeline
 from pipelines.sd2_pipeline import SD2Pipeline
 from pipelines.sd3_pipeline import SD3Pipeline
+from pipelines.flux_pipeline import (
+    FLUXDevPipeline,
+    FLUXSchnellPipeline,
+)  # NEW: Import FLUX pipelines
 
 # --- Application State ---
 # This dictionary will hold the application's state, accessible by all functions.
@@ -24,7 +28,7 @@ from pipelines.sd3_pipeline import SD3Pipeline
 app_state = {
     "current_pipe": None,
     "current_model_name": "",
-    "current_lora_name": "",  # NEW: Track the currently loaded LoRA
+    "current_lora_name": "",
     "is_model_loaded": False,
     "status_message": "No model loaded.",
 }
@@ -48,7 +52,7 @@ def get_config():
     """Returns the initial configuration for the UI."""
     return {
         "models": get_available_models(),
-        "loras": get_available_loras(),  # NEW: Add LoRAs to config
+        "loras": get_available_loras(),
         "schedulers": list(SCHEDULER_MAP.keys()),
         "gallery_images": get_output_images(),
     }
@@ -62,7 +66,6 @@ def get_available_models():
 
 def get_available_loras():
     """Scans the loras directory and returns a list of available LoRA names."""
-    # Create the directory if it doesn't exist to prevent errors on first run
     os.makedirs("./loras", exist_ok=True)
     loras_path = os.path.join("./loras", "*.safetensors")
     return [os.path.basename(p).replace(".safetensors", "") for p in glob(loras_path)]
@@ -71,7 +74,6 @@ def get_available_loras():
 def get_output_images():
     """Returns a sorted list of generated images from the outputs directory."""
     outputs_path = os.path.join("./outputs", "*.png")
-    # Sort by modification time, newest first, and return just the filenames
     return [
         os.path.basename(f)
         for f in sorted(glob(outputs_path), key=os.path.getmtime, reverse=True)
@@ -87,19 +89,16 @@ def unload_model():
     logger.info(f"Unloading model '{app_state['current_model_name']}' from VRAM...")
     pipe_to_delete = app_state["current_pipe"]
 
-    # Explicitly delete the pipeline object
     if hasattr(pipe_to_delete, "pipe"):
         del pipe_to_delete.pipe
     del pipe_to_delete
 
-    # Reset application state
     app_state["current_pipe"] = None
     app_state["current_model_name"] = ""
-    app_state["current_lora_name"] = ""  # NEW: Reset LoRA state
+    app_state["current_lora_name"] = ""
     app_state["is_model_loaded"] = False
     app_state["status_message"] = "No model loaded."
 
-    # Clear PyTorch cache for XPU
     torch.xpu.empty_cache()
 
     logger.info("Model unloaded and VRAM cache cleared.")
@@ -123,7 +122,6 @@ def load_model(
             progress_callback(progress, desc)
 
     try:
-        # If a model is already loaded, unload it first.
         if app_state["is_model_loaded"]:
             unload_model()
 
@@ -134,7 +132,6 @@ def load_model(
         pipe.load_pipeline(lambda progress, desc: update_progress(progress, desc))
         pipe.place_on_device(use_cpu_offload=cpu_offload)
 
-        # NEW: Load LoRA weights if a LoRA is selected
         if lora_name and lora_name != "None":
             lora_path = os.path.join("./loras", f"{lora_name}.safetensors")
             if os.path.exists(lora_path):
@@ -150,25 +147,34 @@ def load_model(
 
         pipe.optimize_with_ipex(lambda progress, desc: update_progress(progress, desc))
 
-        if not isinstance(pipe, SD3Pipeline):
+        # SD3 and FLUX pipelines manage their own schedulers. Don't override them.
+        if not isinstance(pipe, (SD3Pipeline, FLUXDevPipeline, FLUXSchnellPipeline)):
             logger.info(f"Setting scheduler to: {scheduler_name}")
             SchedulerClass = SCHEDULER_MAP[scheduler_name]
             pipe.pipe.scheduler = SchedulerClass.from_config(pipe.pipe.scheduler.config)
 
-        # VAE Tiling/Slicing
-        if vae_tiling:
-            logger.info("Enabling VAE Slicing & Tiling for memory efficiency.")
-            pipe.pipe.enable_vae_slicing()
-            pipe.pipe.enable_vae_tiling()
+        # VAE Tiling/Slicing is not applicable to FLUX pipelines.
+        if not isinstance(pipe, (FLUXDevPipeline, FLUXSchnellPipeline)):
+            if vae_tiling:
+                logger.info("Enabling VAE Slicing & Tiling for memory efficiency.")
+                pipe.pipe.enable_vae_slicing()
+                pipe.pipe.enable_vae_tiling()
+            else:
+                logger.info("Disabling VAE Slicing & Tiling.")
+                pipe.pipe.disable_vae_slicing()
+                pipe.pipe.disable_vae_tiling()
         else:
-            logger.info("Disabling VAE Slicing & Tiling.")
-            pipe.pipe.disable_vae_slicing()
-            pipe.pipe.disable_vae_tiling()
+            logger.info("VAE Tiling is not applicable for FLUX models.")
 
         app_state["current_pipe"] = pipe
         app_state["current_model_name"] = model_name
 
-        if isinstance(pipe, SD3Pipeline):
+        # NEW: Handle FLUX model types
+        if isinstance(pipe, FLUXDevPipeline):
+            default_res, model_type = 1024, "FLUX Dev"
+        elif isinstance(pipe, FLUXSchnellPipeline):
+            default_res, model_type = 1024, "FLUX Schnell"
+        elif isinstance(pipe, SD3Pipeline):
             default_res, model_type = 1024, "SD3"
         elif isinstance(pipe, SDXLPipeline):
             default_res, model_type = 1024, "SDXL"
@@ -205,7 +211,6 @@ def load_model(
         logger.error(
             f"Failed to load model '{model_name}'. Full error: {e}", exc_info=True
         )
-        # Ensure state is clean after a failed load
         app_state.update(
             {
                 "current_pipe": None,
@@ -227,7 +232,7 @@ def generate_image(
     seed,
     width,
     height,
-    lora_weight,  # NEW: Added lora_weight parameter
+    lora_weight,
     progress_callback=None,
 ):
     """Generates an image based on the provided parameters."""
@@ -237,15 +242,12 @@ def generate_image(
     logger.info("Starting image generation...")
     start_time = time.time()
 
-    # Seed must be an integer
     seed = int(seed if seed is not None else random.randint(0, 2**32 - 1))
     generator = torch.Generator("xpu").manual_seed(seed)
 
-    # Universal progress callback that the pipeline can use
     def pipeline_progress_callback(pipe, step, timestep, callback_kwargs):
         progress = step / int(steps)
         if progress_callback:
-            # step is 0-indexed, so we add 1 for display
             progress_callback(progress, f"Sampling... {step + 1}/{int(steps)}")
         return callback_kwargs
 
@@ -259,23 +261,19 @@ def generate_image(
         "callback_on_step_end": pipeline_progress_callback,
     }
 
-    # NEW: Apply LoRA weight if a LoRA is active
     if app_state["current_lora_name"] and float(lora_weight) > 0:
         gen_kwargs["cross_attention_kwargs"] = {"scale": float(lora_weight)}
         logger.info(
             f"Applying LoRA '{app_state['current_lora_name']}' with weight {lora_weight}"
         )
 
-    # Add negative prompt only if it's not empty
     if negative_prompt and negative_prompt.strip():
         gen_kwargs["negative_prompt"] = negative_prompt
 
-    # Generate the image
     image = app_state["current_pipe"].generate(**gen_kwargs).images[0]
     generation_time = time.time() - start_time
     logger.info(f"Generation completed in {generation_time:.2f} seconds.")
 
-    # Save the image
     os.makedirs("./outputs", exist_ok=True)
     filename = (
         f"{time.strftime('%Y%m%d-%H%M%S')}_{app_state['current_model_name']}_{seed}.png"
