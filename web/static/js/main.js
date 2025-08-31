@@ -54,6 +54,14 @@ document.addEventListener("DOMContentLoaded", () => {
       samplerDropdown: document.getElementById("sampler-dropdown"),
       loadBtn: document.getElementById("load-model-btn"),
       unloadBtn: document.getElementById("unload-model-btn"),
+      refreshBtn: document.getElementById("refresh-models-btn"), // NEW
+    },
+    // NEW: LoRA UI elements
+    lora: {
+      dropdown: document.getElementById("lora-dropdown"),
+      refreshBtn: document.getElementById("refresh-loras-btn"),
+      weightSlider: document.getElementById("lora-weight-slider"),
+      weightValue: document.getElementById("lora-weight-value"),
     },
     params: {
       prompt: document.getElementById("prompt"),
@@ -218,9 +226,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- Custom Components ---
   function createCustomDropdown(container, options, onSelect) {
-    container.innerHTML = `<div class="dropdown-selected" tabindex="0"><span class="selected-text">${
-      options[0] || "No options"
-    }</span></div><ul class="dropdown-options"></ul>`;
+    // Ensure the first option is selected if available
+    const initialValue = options[0] || "No options";
+    container.innerHTML = `<div class="dropdown-selected" tabindex="0"><span class="selected-text">${initialValue}</span></div><ul class="dropdown-options"></ul>`;
     const selected = container.querySelector(".selected-text");
     const optionsList = container.querySelector(".dropdown-options");
     options.forEach((option) => {
@@ -230,8 +238,10 @@ document.addEventListener("DOMContentLoaded", () => {
       li.dataset.value = option;
       optionsList.appendChild(li);
     });
-    container.dataset.value = options[0] || "";
-    if (options[0]) optionsList.querySelector("li").classList.add("selected");
+    container.dataset.value = initialValue;
+    if (options.length > 0) {
+      optionsList.querySelector("li").classList.add("selected");
+    }
     container.addEventListener("click", (e) => {
       if (!container.classList.contains("disabled")) {
         e.stopPropagation();
@@ -287,8 +297,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- Event Listeners Setup ---
   function setupEventListeners() {
     document.querySelectorAll(".range-input").forEach((slider) => {
-      // *** FIX IS HERE ***
-      // Correctly derive the value-display ID from the slider ID
       const valueDisplayId = slider.id.replace("-slider", "-value");
       const valueDisplay = document.getElementById(valueDisplayId);
 
@@ -298,7 +306,6 @@ document.addEventListener("DOMContentLoaded", () => {
             ? "px"
             : "";
         if (valueDisplay) {
-          // Check if the element exists before trying to set its content
           valueDisplay.textContent = slider.value + suffix;
         }
         updateSliderBackground(slider);
@@ -325,6 +332,7 @@ document.addEventListener("DOMContentLoaded", () => {
       sendMessage("load_model", {
         model_name: ui.model.dropdown.dataset.value,
         scheduler_name: ui.model.samplerDropdown.dataset.value,
+        lora_name: ui.lora.dropdown.dataset.value, // NEW
         vae_tiling: ui.params.vaeTilingCheckbox.checked,
         cpu_offload: ui.params.cpuOffloadCheckbox.checked,
       });
@@ -347,6 +355,7 @@ document.addEventListener("DOMContentLoaded", () => {
         seed: parseInt(ui.params.seedInput.value),
         width: parseInt(ui.params.widthSlider.value),
         height: parseInt(ui.params.heightSlider.value),
+        lora_weight: parseFloat(ui.lora.weightSlider.value), // NEW
       });
     });
 
@@ -369,6 +378,28 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
     });
+
+    // NEW: Refresh button listeners
+    const refreshHandler = async (type) => {
+      try {
+        const response = await fetch("/api/config");
+        if (!response.ok) throw new Error("Failed to fetch config");
+        const config = await response.json();
+        if (type === "models") {
+          createCustomDropdown(ui.model.dropdown, config.models);
+        } else if (type === "loras") {
+          createCustomDropdown(ui.lora.dropdown, ["None", ...config.loras]);
+        }
+      } catch (error) {
+        console.error(`Failed to refresh ${type}:`, error);
+        alert(`Could not refresh ${type} list.`);
+      }
+    };
+
+    ui.model.refreshBtn.addEventListener("click", () =>
+      refreshHandler("models")
+    );
+    ui.lora.refreshBtn.addEventListener("click", () => refreshHandler("loras"));
 
     ui.gallery.refreshBtn.addEventListener("click", () =>
       fetch("/api/config")
@@ -394,6 +425,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const config = await response.json();
       createCustomDropdown(ui.model.dropdown, config.models);
       createCustomDropdown(ui.model.samplerDropdown, config.schedulers);
+      createCustomDropdown(ui.lora.dropdown, ["None", ...config.loras]); // NEW
       populateGallery(config.gallery_images);
       setBusyState(false);
     } catch (error) {
