@@ -13,12 +13,12 @@ ASPECT_RATIOS_SD2 = {
     "3:2": (960, 640),
     "16:9": (1024, 576),
 }
-ASPECT_RATIOS_SDXL_SD3 = {
+ASPECT_RATIOS_SDXL_SD3_FLUX = {
     "1:1": (1024, 1024),
     "4:3": (1152, 896),
     "3:2": (1216, 832),
     "16:9": (1344, 768),
-}
+}  # Renamed for clarity
 
 
 def create_ui(available_models, available_loras, schedulers_list, handlers):
@@ -52,11 +52,10 @@ def create_ui(available_models, available_loras, schedulers_list, handlers):
                         )
                         negative_prompt = gr.Textbox(
                             label="Negative Prompt",
-                            placeholder="e.g., ugly, deformed, blurry (optional for SD3)",
+                            placeholder="e.g., ugly, deformed, blurry (optional for FLUX Schnell/SD3)",
                             lines=2,
                         )
 
-                        # NEW: Accordion for LoRA options
                         with gr.Accordion("LoRA (Low-Rank Adaptation)", open=True):
                             with gr.Row():
                                 lora_dropdown = gr.Dropdown(
@@ -100,7 +99,9 @@ def create_ui(available_models, available_loras, schedulers_list, handlers):
                                     step=64,
                                 )
 
-                            gr.Markdown("Set Resolution (SD1.5 / SD2 / SDXL & SD3)")
+                            gr.Markdown(
+                                "Set Resolution (SD1.5 / SD2 / SDXL, SD3 & FLUX)"
+                            )  # Updated title
                             with gr.Row():
                                 aspect_1_1 = gr.Button("1:1")
                                 aspect_4_3 = gr.Button("4:3")
@@ -108,9 +109,8 @@ def create_ui(available_models, available_loras, schedulers_list, handlers):
                                 aspect_16_9 = gr.Button("16:9")
 
                             vae_tiling_checkbox = gr.Checkbox(
-                                label="Enable VAE Tiling (for high resolutions)",
-                                value=True,
-                            )
+                                label="Enable VAE Tiling (Not for FLUX)", value=True
+                            )  # Updated label
                             cpu_offload_checkbox = gr.Checkbox(
                                 label="Enable CPU Offloading (for low VRAM)",
                                 value=False,
@@ -148,8 +148,9 @@ def create_ui(available_models, available_loras, schedulers_list, handlers):
                 refresh_gallery_btn = gr.Button("Refresh Gallery")
 
         def set_aspect_ratio(ratio_key, status_str):
-            if "SDXL" in status_str or "SD3" in status_str:
-                ratios, default_res = ASPECT_RATIOS_SDXL_SD3, (1024, 1024)
+            # NEW: Check for FLUX in addition to SDXL and SD3 for 1024px resolutions
+            if any(model_type in status_str for model_type in ["SDXL", "SD3", "FLUX"]):
+                ratios, default_res = ASPECT_RATIOS_SDXL_SD3_FLUX, (1024, 1024)
             elif "SD 2.x" in status_str:
                 ratios, default_res = ASPECT_RATIOS_SD2, (768, 768)
             else:
@@ -180,9 +181,7 @@ def create_ui(available_models, available_loras, schedulers_list, handlers):
         )
 
         refresh_models_btn.click(fn=handlers["refresh_models"], outputs=model_dropdown)
-        refresh_loras_btn.click(
-            fn=handlers["refresh_loras"], outputs=lora_dropdown
-        )  # NEW
+        refresh_loras_btn.click(fn=handlers["refresh_loras"], outputs=lora_dropdown)
         swap_dims_btn.click(
             fn=handlers["swap_dims"],
             inputs=[width_slider, height_slider],
@@ -200,7 +199,7 @@ def create_ui(available_models, available_loras, schedulers_list, handlers):
             vae_tiling_checkbox,
             cpu_offload_checkbox,
             lora_dropdown,
-        ]  # NEW: Added lora_dropdown
+        ]
         load_model_btn.click(
             fn=handlers["load_model"],
             inputs=load_model_inputs,
@@ -208,7 +207,6 @@ def create_ui(available_models, available_loras, schedulers_list, handlers):
             show_progress="full",
         )
 
-        # NEW: Added lora_weight_slider to inputs
         generate_inputs = [
             prompt,
             negative_prompt,
