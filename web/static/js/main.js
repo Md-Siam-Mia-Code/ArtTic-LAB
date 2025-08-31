@@ -33,6 +33,19 @@ document.addEventListener("DOMContentLoaded", () => {
       "3:2": [1216, 832],
       "16:9": [1344, 768],
     },
+    // NEW: Add FLUX model resolutions. They share the same defaults as SDXL/SD3.
+    "FLUX Dev": {
+      "1:1": [1024, 1024],
+      "4:3": [1152, 896],
+      "3:2": [1216, 832],
+      "16:9": [1344, 768],
+    },
+    "FLUX Schnell": {
+      "1:1": [1024, 1024],
+      "4:3": [1152, 896],
+      "3:2": [1216, 832],
+      "16:9": [1344, 768],
+    },
   };
 
   // --- DOM Element Cache (Complete) ---
@@ -54,9 +67,8 @@ document.addEventListener("DOMContentLoaded", () => {
       samplerDropdown: document.getElementById("sampler-dropdown"),
       loadBtn: document.getElementById("load-model-btn"),
       unloadBtn: document.getElementById("unload-model-btn"),
-      refreshBtn: document.getElementById("refresh-models-btn"), // NEW
+      refreshBtn: document.getElementById("refresh-models-btn"),
     },
-    // NEW: LoRA UI elements
     lora: {
       dropdown: document.getElementById("lora-dropdown"),
       refreshBtn: document.getElementById("refresh-loras-btn"),
@@ -219,14 +231,12 @@ document.addEventListener("DOMContentLoaded", () => {
   function setDimensions(width, height) {
     ui.params.widthSlider.value = width;
     ui.params.heightSlider.value = height;
-    // Trigger input event to update UI
     ui.params.widthSlider.dispatchEvent(new Event("input"));
     ui.params.heightSlider.dispatchEvent(new Event("input"));
   }
 
   // --- Custom Components ---
   function createCustomDropdown(container, options, onSelect) {
-    // Ensure the first option is selected if available
     const initialValue = options[0] || "No options";
     container.innerHTML = `<div class="dropdown-selected" tabindex="0"><span class="selected-text">${initialValue}</span></div><ul class="dropdown-options"></ul>`;
     const selected = container.querySelector(".selected-text");
@@ -311,7 +321,7 @@ document.addEventListener("DOMContentLoaded", () => {
         updateSliderBackground(slider);
       };
       slider.addEventListener("input", updateFunc);
-      updateFunc(); // Initial call
+      updateFunc();
     });
 
     ui.nav.links.forEach((link) => {
@@ -332,7 +342,7 @@ document.addEventListener("DOMContentLoaded", () => {
       sendMessage("load_model", {
         model_name: ui.model.dropdown.dataset.value,
         scheduler_name: ui.model.samplerDropdown.dataset.value,
-        lora_name: ui.lora.dropdown.dataset.value, // NEW
+        lora_name: ui.lora.dropdown.dataset.value,
         vae_tiling: ui.params.vaeTilingCheckbox.checked,
         cpu_offload: ui.params.cpuOffloadCheckbox.checked,
       });
@@ -355,7 +365,7 @@ document.addEventListener("DOMContentLoaded", () => {
         seed: parseInt(ui.params.seedInput.value),
         width: parseInt(ui.params.widthSlider.value),
         height: parseInt(ui.params.heightSlider.value),
-        lora_weight: parseFloat(ui.lora.weightSlider.value), // NEW
+        lora_weight: parseFloat(ui.lora.weightSlider.value),
       });
     });
 
@@ -367,6 +377,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const btn = e.target.closest(".btn-aspect-ratio");
       if (btn && !state.isBusy) {
         const ratio = btn.dataset.ratio;
+        // This logic now works automatically for FLUX models
         const presets =
           ASPECT_RATIOS[state.modelType] || ASPECT_RATIOS["SD 1.5"];
         if (presets[ratio]) {
@@ -379,7 +390,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    // NEW: Refresh button listeners
     const refreshHandler = async (type) => {
       try {
         const response = await fetch("/api/config");
@@ -425,7 +435,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const config = await response.json();
       createCustomDropdown(ui.model.dropdown, config.models);
       createCustomDropdown(ui.model.samplerDropdown, config.schedulers);
-      createCustomDropdown(ui.lora.dropdown, ["None", ...config.loras]); // NEW
+      createCustomDropdown(ui.lora.dropdown, ["None", ...config.loras]);
       populateGallery(config.gallery_images);
       setBusyState(false);
     } catch (error) {
