@@ -45,7 +45,14 @@
                     <div class="control-column">
                          <div class="content-card">
                               <h2 class="card-title">Model & Sampler</h2>
-                              <div class="control-group"><label for="model-dropdown">Model</label>
+                              <div class="control-group">
+                                   <div class="flex-between">
+                                        <label for="model-dropdown">Model</label>
+                                        <button id="refresh-models-btn" class="btn btn-icon btn-secondary"
+                                             style="width:2rem;height:2rem;" title="Refresh Models"><span
+                                                  class="material-symbols-outlined"
+                                                  style="font-size: 1rem;">refresh</span></button>
+                                   </div>
                                    <div id="model-dropdown" class="custom-dropdown"></div>
                               </div>
                               <div class="control-group"><label for="sampler-dropdown">Sampler</label>
@@ -59,6 +66,26 @@
                                              class="material-symbols-outlined">hub</span> Load</button><button
                                         id="unload-model-btn" class="btn btn-secondary"><span
                                              class="material-symbols-outlined">cancel</span> Unload</button></div>
+                         </div>
+                         <!-- NEW: LoRA Card -->
+                         <div class="content-card">
+                              <h2 class="card-title">LoRA</h2>
+                              <div class="control-group">
+                                   <div class="flex-between">
+                                        <label for="lora-dropdown">LoRA (Optional)</label>
+                                        <button id="refresh-loras-btn" class="btn btn-icon btn-secondary"
+                                             style="width:2rem;height:2rem;" title="Refresh LoRAs"><span
+                                                  class="material-symbols-outlined"
+                                                  style="font-size: 1rem;">refresh</span></button>
+                                   </div>
+                                   <div id="lora-dropdown" class="custom-dropdown"></div>
+                              </div>
+                              <div class="control-group">
+                                   <div class="flex-between"><label for="lora-weight-slider">LoRA Weight</label><span
+                                             class="slider-value" id="lora-weight-value">0.7</span></div>
+                                   <div class="slider-container"><input type="range" id="lora-weight-slider"
+                                             class="range-input" min="0" max="1.0" value="0.7" step="0.05"></div>
+                              </div>
                          </div>
                          <div class="content-card">
                               <h2 class="card-title">Prompting</h2>
