@@ -144,5 +144,8 @@ web/__pycache__/
 
 # TXT
 *.txt
+
+# Directory
 /models
 /outputs
+/loras
