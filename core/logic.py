@@ -24,6 +24,7 @@ from pipelines.sd3_pipeline import SD3Pipeline
 app_state = {
     "current_pipe": None,
     "current_model_name": "",
+    "current_lora_name": "",  # NEW: Track the currently loaded LoRA
     "is_model_loaded": False,
     "status_message": "No model loaded.",
 }
@@ -47,6 +48,7 @@ def get_config():
     """Returns the initial configuration for the UI."""
     return {
         "models": get_available_models(),
+        "loras": get_available_loras(),  # NEW: Add LoRAs to config
         "schedulers": list(SCHEDULER_MAP.keys()),
         "gallery_images": get_output_images(),
     }
@@ -56,6 +58,14 @@ def get_available_models():
     """Scans the models directory and returns a list of available model names."""
     models_path = os.path.join("./models", "*.safetensors")
     return [os.path.basename(p).replace(".safetensors", "") for p in glob(models_path)]
+
+
+def get_available_loras():
+    """Scans the loras directory and returns a list of available LoRA names."""
+    # Create the directory if it doesn't exist to prevent errors on first run
+    os.makedirs("./loras", exist_ok=True)
+    loras_path = os.path.join("./loras", "*.safetensors")
+    return [os.path.basename(p).replace(".safetensors", "") for p in glob(loras_path)]
 
 
 def get_output_images():
@@ -85,6 +95,7 @@ def unload_model():
     # Reset application state
     app_state["current_pipe"] = None
     app_state["current_model_name"] = ""
+    app_state["current_lora_name"] = ""  # NEW: Reset LoRA state
     app_state["is_model_loaded"] = False
     app_state["status_message"] = "No model loaded."
 
@@ -96,9 +107,14 @@ def unload_model():
 
 
 def load_model(
-    model_name, scheduler_name, vae_tiling, cpu_offload, progress_callback=None
+    model_name,
+    scheduler_name,
+    vae_tiling,
+    cpu_offload,
+    lora_name,
+    progress_callback=None,
 ):
-    """Loads a new model into memory, applying specified configurations."""
+    """Loads a new model into memory, applying specified configurations and a LoRA."""
     if not model_name:
         raise ValueError("Please select a model from the dropdown.")
 
@@ -115,15 +131,23 @@ def load_model(
         update_progress(0, f"Getting pipeline for {model_name}...")
 
         pipe = get_pipeline_for_model(model_name)
-
-        # *** FIX IS HERE ***
-        # The lambda now correctly accepts 'desc' as a keyword argument.
         pipe.load_pipeline(lambda progress, desc: update_progress(progress, desc))
-
         pipe.place_on_device(use_cpu_offload=cpu_offload)
 
-        # *** AND FIX IS HERE ***
-        # The same fix is applied to the optimize_with_ipex callback.
+        # NEW: Load LoRA weights if a LoRA is selected
+        if lora_name and lora_name != "None":
+            lora_path = os.path.join("./loras", f"{lora_name}.safetensors")
+            if os.path.exists(lora_path):
+                logger.info(f"Loading LoRA: {lora_name}")
+                update_progress(0.7, f"Loading LoRA: {lora_name}")
+                pipe.pipe.load_lora_weights(lora_path)
+                app_state["current_lora_name"] = lora_name
+            else:
+                logger.warning(f"LoRA file not found: {lora_path}. Skipping.")
+                app_state["current_lora_name"] = ""
+        else:
+            app_state["current_lora_name"] = ""
+
         pipe.optimize_with_ipex(lambda progress, desc: update_progress(progress, desc))
 
         if not isinstance(pipe, SD3Pipeline):
@@ -154,7 +178,14 @@ def load_model(
             default_res, model_type = 512, "SD 1.5"
 
         status_suffix = "(CPU Offload)" if cpu_offload else ""
-        status_message = f"Ready: {model_name} ({model_type}) {status_suffix}"
+        lora_suffix = (
+            f" + {app_state['current_lora_name']}"
+            if app_state["current_lora_name"]
+            else ""
+        )
+        status_message = (
+            f"Ready: {model_name} ({model_type}){lora_suffix} {status_suffix}"
+        )
 
         app_state["status_message"] = status_message
         app_state["is_model_loaded"] = True
@@ -176,7 +207,12 @@ def load_model(
         )
         # Ensure state is clean after a failed load
         app_state.update(
-            {"current_pipe": None, "current_model_name": "", "is_model_loaded": False}
+            {
+                "current_pipe": None,
+                "current_model_name": "",
+                "is_model_loaded": False,
+                "current_lora_name": "",
+            }
         )
         raise RuntimeError(
             f"Failed to load model '{model_name}'. Check logs for details."
@@ -191,6 +227,7 @@ def generate_image(
     seed,
     width,
     height,
+    lora_weight,  # NEW: Added lora_weight parameter
     progress_callback=None,
 ):
     """Generates an image based on the provided parameters."""
@@ -221,6 +258,14 @@ def generate_image(
         "generator": generator,
         "callback_on_step_end": pipeline_progress_callback,
     }
+
+    # NEW: Apply LoRA weight if a LoRA is active
+    if app_state["current_lora_name"] and float(lora_weight) > 0:
+        gen_kwargs["cross_attention_kwargs"] = {"scale": float(lora_weight)}
+        logger.info(
+            f"Applying LoRA '{app_state['current_lora_name']}' with weight {lora_weight}"
+        )
+
     # Add negative prompt only if it's not empty
     if negative_prompt and negative_prompt.strip():
         gen_kwargs["negative_prompt"] = negative_prompt
@@ -239,5 +284,7 @@ def generate_image(
     image.save(filepath)
 
     info_text = f"Generated in {generation_time:.2f}s on '{app_state['current_model_name']}' with seed {seed}."
+    if app_state["current_lora_name"]:
+        info_text += f" LoRA: {app_state['current_lora_name']} @ {lora_weight}."
 
     return {"image_filename": filename, "info": info_text}
