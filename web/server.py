@@ -80,12 +80,16 @@ async def websocket_endpoint(websocket: WebSocket):
 
             try:
                 if action == "load_model":
+                    # The core.load_model function now expects lora_name.
+                    # The payload from JS will provide it.
                     result = core.load_model(
                         **payload, progress_callback=progress_callback
                     )
                     await websocket.send_json({"type": "model_loaded", "data": result})
 
                 elif action == "generate_image":
+                    # The core.generate_image function now expects lora_weight.
+                    # The payload from JS will provide it.
                     result = core.generate_image(
                         **payload, progress_callback=progress_callback
                     )
