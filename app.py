@@ -8,7 +8,12 @@ import signal
 import random
 import torch
 from helpers.cli_manager import setup_logging, log_system_info, APP_LOGGER_NAME
-from core.logic import SCHEDULER_MAP, get_available_models, get_output_images
+from core.logic import (
+    SCHEDULER_MAP,
+    get_available_models,
+    get_available_loras,
+    get_output_images,
+)  # NEW: import get_available_loras
 
 # --- Argument Parsing ---
 parser = argparse.ArgumentParser(
@@ -62,7 +67,12 @@ def launch_gradio():
 
     # Wrapper functions (handlers) that adapt core logic for Gradio
     def load_model_handler_gr(
-        model_name, scheduler_name, vae_tiling, cpu_offload, progress=gr.Progress()
+        model_name,
+        scheduler_name,
+        vae_tiling,
+        cpu_offload,
+        lora_name,
+        progress=gr.Progress(),  # NEW: Added lora_name
     ):
         try:
             result = core.load_model(
@@ -70,6 +80,7 @@ def launch_gradio():
                 scheduler_name,
                 vae_tiling,
                 cpu_offload,
+                lora_name,  # NEW: Pass lora_name
                 progress_callback=lambda p, d: progress(p, desc=d),
             )
             return (
@@ -88,6 +99,7 @@ def launch_gradio():
         seed,
         width,
         height,
+        lora_weight,  # NEW: Added lora_weight
         progress=gr.Progress(),
     ):
         if not core.app_state["is_model_loaded"]:
@@ -101,6 +113,7 @@ def launch_gradio():
                 seed,
                 width,
                 height,
+                lora_weight,  # NEW: Pass lora_weight
                 progress_callback=lambda p, d: progress(p, desc=d),
             )
             # Gradio's gr.Image needs a file path or PIL image
@@ -113,6 +126,11 @@ def launch_gradio():
     def refresh_models_handler_gr():
         logger.info("Refreshing model list...")
         return gr.Dropdown(choices=core.get_available_models())
+
+    # NEW: Handler to refresh the LoRA list
+    def refresh_loras_handler_gr():
+        logger.info("Refreshing LoRA list...")
+        return gr.Dropdown(choices=["None"] + core.get_available_loras())
 
     def unload_model_handler_gr():
         result = core.unload_model()
@@ -133,13 +151,21 @@ def launch_gradio():
             os.path.join("./outputs", f) for f in core.get_output_images()
         ],
         "refresh_models": refresh_models_handler_gr,
+        "refresh_loras": refresh_loras_handler_gr,  # NEW
         "randomize_seed": randomize_seed_handler_gr,
         "swap_dims": swap_dimensions_handler_gr,
         "unload_model": unload_model_handler_gr,
         "toggle_vae_tiling": lambda: None,
     }
 
-    app = create_ui(get_available_models(), list(SCHEDULER_MAP.keys()), handlers)
+    # NEW: Pass available LoRAs to the UI creation function
+    app = create_ui(
+        get_available_models(),
+        get_available_loras(),
+        list(SCHEDULER_MAP.keys()),
+        handlers,
+    )
+
     logger.info("UI is ready. Launching Gradio server...")
     logger.info(
         "Access ArtTic-LAB via the URLs below. Press Ctrl+C in this terminal to shutdown."
