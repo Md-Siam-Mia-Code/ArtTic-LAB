@@ -71,11 +71,44 @@ install_packages() {
     done
     if [ $? -ne 0 ]; then echo "[ERROR] PyTorch installation failed." >&2; return 1; fi
 
-    echo "[INFO] Installing other dependencies..."
-    pip install diffusers accelerate safetensors gradio invisible-watermark
+    echo "[INFO] Installing other dependencies from requirements.txt..."
+    # UPDATED: Using requirements.txt for consistency with the .bat script
+    pip install -r requirements.txt
     if [ $? -ne 0 ]; then echo "[ERROR] Installation of other dependencies failed." >&2; return 1; fi
 
     return 0
+}
+
+handle_hf_login() {
+    echo ""
+    echo "-------------------------------------------------------"
+    echo "[ACTION REQUIRED] Hugging Face Login"
+    echo "-------------------------------------------------------"
+    echo "Models like SD3 and FLUX require you to be logged into"
+    echo "your Hugging Face account to download base files."
+    echo ""
+    read -p "Would you like to log in now? (y/n) " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        echo ""
+        echo "[INFO] Please get your Hugging Face User Access Token here:"
+        echo "       https://huggingface.co/settings/tokens"
+        echo "[INFO] The token needs at least 'read' permissions."
+        echo ""
+        huggingface-cli login
+        echo ""
+        echo "[IMPORTANT] Remember to visit the model pages on the"
+        echo "Hugging Face website to accept their license agreements:"
+        echo "- SD3: https://huggingface.co/stabilityai/stable-diffusion-3-medium-diffusers"
+        echo "- FLUX: https://huggingface.co/black-forest-labs/FLUX.1-dev"
+        echo ""
+    else
+        echo ""
+        echo "[INFO] Skipping Hugging Face login."
+        echo "You can log in later by activating the environment"
+        echo "('conda activate ArtTic-LAB') and running 'huggingface-cli login'."
+        echo "Note: SD3 and FLUX models will not work until you do."
+    fi
 }
 
 # --- Main Script ---
@@ -115,6 +148,8 @@ fi
 
 # 3. Install packages
 if install_packages; then
+    handle_hf_login
+
     echo ""
     echo "======================================================="
     echo "[SUCCESS] Installation complete!"

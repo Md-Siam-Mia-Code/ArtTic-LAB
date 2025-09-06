@@ -1,126 +1,173 @@
 @echo off
 setlocal enabledelayedexpansion
 
-REM ArtTic-LAB Installer for Windows
+:: Set the title for the command window
 title ArtTic-LAB Installer
 
 :: --- Configuration ---
-SET "ENV_NAME=ArtTic-LAB"
-SET "PYTHON_VERSIONS_TO_TRY=3.11 3.12 3.10"
-SET "PYTORCH_LATEST=torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/xpu"
-SET "IPEX_LATEST=intel-extension-for-pytorch --extra-index-url https://pytorch-extension.intel.com/release-whl/stable/xpu/us/"
-SET "OTHER_PACKAGES=diffusers accelerate safetensors gradio invisible-watermark"
+set "ENV_NAME=ArtTic-LAB"
+set "PYTHON_VERSION=3.11"
 
+:: --- Main Script ---
 :main
 cls
-ECHO.
-ECHO =======================================================
-ECHO             ArtTic-LAB Installer
-ECHO =======================================================
-ECHO.
-ECHO This script will find your Conda installation and
-ECHO prepare the '%ENV_NAME%' environment.
-ECHO.
+echo =======================================================
+echo             ArtTic-LAB Installer for Windows
+echo =======================================================
+echo.
+echo This script will find your Conda installation and prepare
+echo the '%ENV_NAME%' environment.
+echo.
 
-REM =======================================================
-REM 1. FIND AND INITIALIZE CONDA
-REM =======================================================
-ECHO [INFO] Searching for Conda installation...
-SET "CONDA_BASE_PATH="
-where conda.exe >nul 2>nul && (FOR /F "delims=" %%i IN ('where conda.exe') DO SET "CONDA_EXE_PATH=%%i" & GOTO FoundConda)
-IF EXIST "%USERPROFILE%\Miniconda3\condabin\conda.bat" SET "CONDA_BASE_PATH=%USERPROFILE%\Miniconda3" & GOTO FoundConda
-IF EXIST "%USERPROFILE%\Anaconda3\condabin\conda.bat" SET "CONDA_BASE_PATH=%USERPROFILE%\Anaconda3" & GOTO FoundConda
-IF EXIST "%ProgramData%\Miniconda3\condabin\conda.bat" SET "CONDA_BASE_PATH=%ProgramData%\Miniconda3" & GOTO FoundConda
-IF EXIST "%ProgramData%\Anaconda3\condabin\conda.bat" SET "CONDA_BASE_PATH=%ProgramData%\Anaconda3" & GOTO FoundConda
-GOTO NoConda
+:: 1. Find and initialize Conda
+call :find_conda
+if errorlevel 1 (
+    echo [ERROR] Conda installation not found. Please ensure Miniconda or Anaconda is installed.
+    pause
+    exit /b 1
+)
+echo [SUCCESS] Conda installation detected.
 
-:FoundConda
-IF NOT DEFINED CONDA_BASE_PATH ( FOR %%i IN ("%CONDA_EXE_PATH%") DO SET "CONDA_SCRIPTS_DIR=%%~dpi" & FOR %%j IN ("!CONDA_SCRIPTS_DIR!..") DO SET "CONDA_BASE_PATH=%%~fj" )
-ECHO [SUCCESS] Conda installation detected at: %CONDA_BASE_PATH%
-ECHO.
-call "%CONDA_BASE_PATH%\Scripts\activate.bat"
-IF %ERRORLEVEL% NEQ 0 ( ECHO [ERROR] Failed to execute Conda's activate.bat script. & GOTO InstallFail )
-
-REM =======================================================
-REM 2. HANDLE ENVIRONMENT CREATION LOGIC
-REM =======================================================
-SET "ENV_EXISTS=0"
-conda env list | findstr /I /B "%ENV_NAME% " >nul && SET "ENV_EXISTS=1"
-
-IF "%ENV_EXISTS%"=="1" (
-    ECHO [WARNING] Environment '%ENV_NAME%' already exists.
-    CHOICE /C YN /M "Do you want to remove it and perform a clean installation?"
-    
-    REM ################### CRITICAL FIX IS HERE ###################
-    REM Use !ERRORLEVEL! because we are inside a code block ().
-    REM %ERRORLEVEL% would be evaluated when the block is first read, not after CHOICE runs.
-    IF !ERRORLEVEL! EQU 2 (
-        ECHO [INFO] Skipping environment creation. Will install/update packages in the existing environment.
-        GOTO ActivateAndInstall
+:: 2. Handle environment creation
+echo.
+echo [INFO] Checking for existing '%ENV_NAME%' environment...
+conda env list | findstr /B /C:"%ENV_NAME% " >nul
+if not errorlevel 1 (
+    echo [WARNING] Environment '%ENV_NAME%' already exists.
+    set /p "REINSTALL=Do you want to reinstall it? (y/n): "
+    if /i not "!REINSTALL!"=="y" (
+        echo [INFO] Skipping environment creation. Will update packages.
+        goto install_packages
     )
-    REM If user chose 'Y' (ERRORLEVEL 1), execution continues past this IF block.
 )
 
-ECHO [INFO] Starting clean installation of environment '%ENV_NAME%'...
-FOR %%P IN (%PYTHON_VERSIONS_TO_TRY%) DO (
-    call :CreateEnvironment %%P
-    IF !ERRORLEVEL! EQU 0 GOTO ActivateAndInstall
+call :create_environment
+if errorlevel 1 (
+    echo [FATAL ERROR] Could not create the Conda environment.
+    pause
+    exit /b 1
 )
-GOTO UltimateFail
 
-
-REM =======================================================
-REM 3. ACTIVATE AND INSTALL PACKAGES
-REM =======================================================
-:ActivateAndInstall
-ECHO.
-ECHO [INFO] Activating environment and installing/updating dependencies...
-ECHO This is the longest step. Please be patient.
+:install_packages
+echo.
+echo [INFO] Activating environment and installing/updating dependencies...
+echo This is the longest step. Please be patient.
 call conda activate %ENV_NAME%
-IF %ERRORLEVEL% NEQ 0 ( ECHO [ERROR] Failed to activate the '%ENV_NAME%' environment. It may be corrupt. & GOTO InstallFail )
+if errorlevel 1 (
+    echo [ERROR] Failed to activate Conda environment.
+    pause
+    exit /b 1
+)
 
+echo [INFO] Upgrading pip...
 python -m pip install --upgrade pip --quiet
-IF %ERRORLEVEL% NEQ 0 ( ECHO [ERROR] Failed to upgrade pip. & GOTO InstallFail )
+if errorlevel 1 ( echo [ERROR] Failed to upgrade pip. & pause & exit /b 1 )
 
-ECHO [INFO] Installing PyTorch for Intel GPU (XPU)...
-python -m pip install %PYTORCH_LATEST%
-IF !ERRORLEVEL! NEQ 0 ( ECHO [ERROR] Failed to install PyTorch. & GOTO InstallFail )
+echo.
+echo Please select your hardware for PyTorch installation:
+echo   1. NVIDIA (CUDA)
+echo   2. Intel GPU (XPU)
+echo   3. CPU only
+echo.
+set /p "HARDWARE_CHOICE=Enter your choice (1, 2, or 3): "
 
-ECHO [INFO] Installing Intel Extension for PyTorch (IPEX)...
-python -m pip install %IPEX_LATEST%
-IF !ERRORLEVEL! NEQ 0 ( ECHO [ERROR] Failed to install IPEX. & GOTO InstallFail )
+if "!HARDWARE_CHOICE!"=="1" (
+    pip install torch torchvision torchaudio
+) else if "!HARDWARE_CHOICE!"=="2" (
+    pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/xpu
+    pip install intel-extension-for-pytorch --extra-index-url https://pytorch-extension.intel.com/release-whl/stable/xpu/us/
+) else if "!HARDWARE_CHOICE!"=="3" (
+    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+) else (
+    echo [ERROR] Invalid choice. Aborting.
+    pause
+    exit /b 1
+)
+if errorlevel 1 ( echo [ERROR] PyTorch installation failed. & pause & exit /b 1 )
 
-ECHO [INFO] Installing other dependencies...
-pip install %OTHER_PACKAGES%
-IF %ERRORLEVEL% NEQ 0 ( ECHO [ERROR] Failed to install other dependencies. & GOTO InstallFail )
+echo [INFO] Installing other dependencies from requirements.txt...
+pip install -r requirements.txt
+if errorlevel 1 ( echo [ERROR] Installation of other dependencies failed. & pause & exit /b 1 )
 
-GOTO InstallationSucceeded
+call :handle_hf_login
 
-
-REM =======================================================
-REM SUBROUTINE: CreateEnvironment
-REM =======================================================
-:CreateEnvironment
-ECHO. & ECHO ------------------------------------------------------- & ECHO [ATTEMPT] Trying to create environment with Python %1... & ECHO -------------------------------------------------------
-ECHO [INFO] Removing any previous version of '%ENV_NAME%'...
-call conda env remove --name %ENV_NAME% -y >nul 2>nul
-ECHO [INFO] Creating new Conda environment...
-call conda create --name %ENV_NAME% python=%1 -y
-IF %ERRORLEVEL% NEQ 0 ( ECHO [ERROR] Failed to create environment with Python %1. & exit /b 1 )
+echo.
+echo =======================================================
+echo [SUCCESS] Installation complete!
+echo You can now run 'start.bat' to launch ArtTic-LAB.
+echo =======================================================
+echo.
+pause
 exit /b 0
 
 
-REM =======================================================
-REM FINAL OUTCOMES
-REM =======================================================
-:InstallationSucceeded
-ECHO. & ECHO ======================================================= & ECHO [SUCCESS] Installation complete! & ECHO You can now run 'start.bat' to launch ArtTic-LAB. & ECHO ======================================================= & ECHO. & GOTO End
-:NoConda
-ECHO. & ECHO [ERROR] Conda not found. Please install Miniconda. & ECHO. & GOTO End
-:InstallFail
-ECHO. & ECHO [ERROR] An unexpected error occurred during setup. & ECHO. & GOTO End
-:UltimateFail
-ECHO. & ECHO ======================================================= & ECHO [FATAL ERROR] All installation attempts have failed. & ECHO ======================================================= & ECHO We tried Python versions %PYTHON_VERSIONS_TO_TRY% but could not create a working environment. & ECHO. & GOTO End
-:End
-pause
-endlocal
+:: --- Subroutines ---
+:find_conda
+:: This robustly finds Conda by checking common paths and initializing the shell
+set "FOUND_CONDA="
+if defined CONDA_EXE (
+    set "FOUND_CONDA=true"
+) else (
+    if exist "%USERPROFILE%\miniconda3\condabin\conda.bat" (
+        call "%USERPROFILE%\miniconda3\Scripts\activate.bat"
+        set "FOUND_CONDA=true"
+    ) else if exist "%USERPROFILE%\anaconda3\condabin\conda.bat" (
+        call "%USERPROFILE%\anaconda3\Scripts\activate.bat"
+        set "FOUND_CONDA=true"
+    ) else if exist "%ProgramData%\Miniconda3\condabin\conda.bat" (
+        call "%ProgramData%\Miniconda3\Scripts\activate.bat"
+        set "FOUND_CONDA=true"
+    ) else if exist "%ProgramData%\Anaconda3\condabin\conda.bat" (
+        call "%ProgramData%\Anaconda3\Scripts\activate.bat"
+        set "FOUND_CONDA=true"
+    )
+)
+
+if defined FOUND_CONDA (
+    exit /b 0
+) else (
+    exit /b 1
+)
+
+:create_environment
+echo.
+echo -------------------------------------------------------
+echo [INFO] Creating Conda environment with Python %PYTHON_VERSION%...
+echo -------------------------------------------------------
+echo [INFO] Removing any previous version of '%ENV_NAME%'...
+conda env remove --name "%ENV_NAME%" -y >nul 2>nul
+echo [INFO] Creating new Conda environment...
+conda create --name "%ENV_NAME%" python=%PYTHON_VERSION% -y
+if errorlevel 1 exit /b 1
+exit /b 0
+
+:handle_hf_login
+echo.
+echo -------------------------------------------------------
+echo [ACTION REQUIRED] Hugging Face Login
+echo -------------------------------------------------------
+echo Models like SD3 and FLUX require you to be logged into
+echo your Hugging Face account to download base files.
+echo.
+set /p "LOGIN_CHOICE=Would you like to log in now? (y/n): "
+if /i "!LOGIN_CHOICE!"=="y" (
+    echo.
+    echo [INFO] Please get your Hugging Face User Access Token here:
+    echo        https://huggingface.co/settings/tokens
+    echo [INFO] The token needs at least 'read' permissions.
+    echo.
+    huggingface-cli login
+    echo.
+    echo [IMPORTANT] Remember to visit the model pages on the
+    echo Hugging Face website to accept their license agreements:
+    echo - SD3: https://huggingface.co/stabilityai/stable-diffusion-3-medium-diffusers
+    echo - FLUX: https://huggingface.co/black-forest-labs/FLUX.1-dev
+    echo.
+) else (
+    echo.
+    echo [INFO] Skipping Hugging Face login.
+    echo You can log in later by opening a terminal, running
+    echo 'conda activate %ENV_NAME%' and then 'huggingface-cli login'.
+    echo Note: SD3 and FLUX models will not work until you do.
+)
+exit /b 0
