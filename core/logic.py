@@ -17,14 +17,11 @@ from pipelines import get_pipeline_for_model
 from pipelines.sdxl_pipeline import SDXLPipeline
 from pipelines.sd2_pipeline import SD2Pipeline
 from pipelines.sd3_pipeline import SD3Pipeline
-from pipelines.flux_pipeline import (
-    FLUXDevPipeline,
-    FLUXSchnellPipeline,
-)  # NEW: Import FLUX pipelines
+
+# CORRECTED: Import the new unified FLUX pipeline class
+from pipelines.flux_pipeline import ArtTicFLUXPipeline
 
 # --- Application State ---
-# This dictionary will hold the application's state, accessible by all functions.
-# It's a cleaner approach than using multiple global variables.
 app_state = {
     "current_pipe": None,
     "current_model_name": "",
@@ -93,11 +90,15 @@ def unload_model():
         del pipe_to_delete.pipe
     del pipe_to_delete
 
-    app_state["current_pipe"] = None
-    app_state["current_model_name"] = ""
-    app_state["current_lora_name"] = ""
-    app_state["is_model_loaded"] = False
-    app_state["status_message"] = "No model loaded."
+    app_state.update(
+        {
+            "current_pipe": None,
+            "current_model_name": "",
+            "current_lora_name": "",
+            "is_model_loaded": False,
+            "status_message": "No model loaded.",
+        }
+    )
 
     torch.xpu.empty_cache()
 
@@ -147,14 +148,14 @@ def load_model(
 
         pipe.optimize_with_ipex(lambda progress, desc: update_progress(progress, desc))
 
-        # SD3 and FLUX pipelines manage their own schedulers. Don't override them.
-        if not isinstance(pipe, (SD3Pipeline, FLUXDevPipeline, FLUXSchnellPipeline)):
+        # CORRECTED: Simplified check for pipelines that manage their own schedulers
+        if not isinstance(pipe, (SD3Pipeline, ArtTicFLUXPipeline)):
             logger.info(f"Setting scheduler to: {scheduler_name}")
             SchedulerClass = SCHEDULER_MAP[scheduler_name]
             pipe.pipe.scheduler = SchedulerClass.from_config(pipe.pipe.scheduler.config)
 
-        # VAE Tiling/Slicing is not applicable to FLUX pipelines.
-        if not isinstance(pipe, (FLUXDevPipeline, FLUXSchnellPipeline)):
+        # CORRECTED: Simplified check for VAE tiling applicability
+        if not isinstance(pipe, ArtTicFLUXPipeline):
             if vae_tiling:
                 logger.info("Enabling VAE Slicing & Tiling for memory efficiency.")
                 pipe.pipe.enable_vae_slicing()
@@ -169,11 +170,10 @@ def load_model(
         app_state["current_pipe"] = pipe
         app_state["current_model_name"] = model_name
 
-        # NEW: Handle FLUX model types
-        if isinstance(pipe, FLUXDevPipeline):
-            default_res, model_type = 1024, "FLUX Dev"
-        elif isinstance(pipe, FLUXSchnellPipeline):
-            default_res, model_type = 1024, "FLUX Schnell"
+        # CORRECTED: Logic to determine model type string and resolution
+        if isinstance(pipe, ArtTicFLUXPipeline):
+            model_type = "FLUX Schnell" if pipe.is_schnell else "FLUX Dev"
+            default_res = 1024
         elif isinstance(pipe, SD3Pipeline):
             default_res, model_type = 1024, "SD3"
         elif isinstance(pipe, SDXLPipeline):
@@ -235,7 +235,6 @@ def generate_image(
     lora_weight,
     progress_callback=None,
 ):
-    """Generates an image based on the provided parameters."""
     if not app_state["is_model_loaded"]:
         raise ConnectionAbortedError("Cannot generate, no model is loaded.")
 
